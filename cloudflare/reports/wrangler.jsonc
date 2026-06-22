@@ -1,0 +1,49 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "checkin-reports",
+  "main": "./worker.mjs",
+  "compatibility_date": "2026-06-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "reports.elegantlashesbykatie.com/*",
+      "zone_name": "elegantlashesbykatie.com"
+    }
+  ],
+  "assets": {
+    "directory": "../../build",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "KIOSK_RELEASE_POLICY_KV",
+      "id": "62298b62c8a644898c7f0aa5c875b075"
+    }
+  ],
+  "build": {
+    "command": "npm run build",
+    "cwd": ".",
+    "watch_dir": ["../../src", "../../public", "../shared", "./worker.mjs"]
+  },
+  "vars": {
+    "EDGE_APP_NAME": "checkin-reports",
+    "EDGE_ENVIRONMENT": "production",
+    "KIOSK_RELEASE_POLICY_KV_KEY": "kiosk-release-policy:override",
+    // ORIGIN_ACCESS_CLIENT_ID and ORIGIN_ACCESS_CLIENT_SECRET are Worker secrets.
+    "ORIGIN_BASE_URL": "https://checkin-origin.elegantlashesbykatie.com"
+  },
+  "secrets": {
+    "required": [
+      "ORIGIN_ACCESS_CLIENT_ID",
+      "ORIGIN_ACCESS_CLIENT_SECRET"
+    ]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1
+  }
+}

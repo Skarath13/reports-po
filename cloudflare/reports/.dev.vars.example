@@ -1,0 +1,6 @@
+EDGE_ENVIRONMENT=local
+ORIGIN_BASE_URL=http://localhost:8000
+KIOSK_RELEASE_POLICY_KV_KEY=kiosk-release-policy:override
+# Set both only when testing through a Cloudflare Access-protected origin.
+# ORIGIN_ACCESS_CLIENT_ID=
+# ORIGIN_ACCESS_CLIENT_SECRET=
