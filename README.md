@@ -23,6 +23,8 @@ Production deploy command:
 npx wrangler deploy --config cloudflare/reports/wrangler.jsonc
 ```
 
+Last push-trigger verification: 2026-06-22.
+
 Worker secrets should only be:
 
 - `ORIGIN_ACCESS_CLIENT_ID`
