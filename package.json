@@ -20,7 +20,9 @@
     "test:cloudflare-shell": "node --test cloudflare/tests/*.test.mjs",
     "cf:dry-run": "wrangler deploy --config cloudflare/reports/wrangler.jsonc --dry-run",
     "cf:deploy": "wrangler deploy --config cloudflare/reports/wrangler.jsonc",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "npm run build && wrangler deploy",
+    "preview": "npm run build && wrangler dev"
   },
   "devDependencies": {
     "wrangler": "^4.103.0",
