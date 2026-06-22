@@ -15,7 +15,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build && node scripts/write-build-metadata.js",
     "test": "react-scripts test",
     "test:cloudflare-shell": "node --test cloudflare/tests/*.test.mjs",
     "cf:dry-run": "wrangler deploy --config cloudflare/reports/wrangler.jsonc --dry-run",
