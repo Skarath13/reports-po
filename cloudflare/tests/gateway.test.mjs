@@ -479,7 +479,8 @@ test('wrangler configs declare exact approved routes and protected origin secret
   ]) {
     const config = readJsonc(path.join(repoRoot, configPath));
 
-    assert.equal(config.workers_dev, true, `${configPath} should keep workers.dev previews enabled`);
+    assert.equal(config.workers_dev, false, `${configPath} must keep workers.dev disabled`);
+    assert.equal(config.preview_urls, false, `${configPath} must keep preview URLs disabled`);
     assert.equal(config.route, undefined, `${configPath} must not declare a singular production route`);
     assert.deepEqual(config.routes, expectedRoutesByConfig[configPath], `${configPath} must declare only the approved production route`);
     assert.equal(config.custom_domain, undefined, `${configPath} must not declare a custom domain`);
