@@ -23,7 +23,8 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "wrangler": "^4.103.0"
+    "wrangler": "^4.103.0",
+    "yaml": "^2.9.0"
   },
   "eslintConfig": {
     "extends": [
