@@ -39,16 +39,20 @@ class ReportsAPIClient {
       headers,
     });
 
+    const data = await response.json().catch(() => null);
+
     if (response.status === 401) {
       this.setToken(null);
-      window.dispatchEvent(new CustomEvent('auth-expired'));
-      throw new Error('Session expired');
+
+      if (endpoint !== '/auth/login') {
+        window.dispatchEvent(new CustomEvent('auth-expired'));
+      }
+
+      throw new Error(data?.error || data?.msg || 'Authentication failed');
     }
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.error || 'API request failed');
+      throw new Error(data?.error || data?.msg || 'API request failed');
     }
 
     return data;

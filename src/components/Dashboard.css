@@ -887,13 +887,39 @@
   }
 
   .appointment-row {
-    grid-template-columns: 60px 1fr 35px;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "time customer badges"
+      "time service badges";
     gap: 8px;
-    padding: 6px 8px;
+    padding: 8px 10px;
+  }
+
+  .appointment-row.hide-names {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    grid-template-areas: "time service badges";
+  }
+
+  .apt-time {
+    grid-area: time;
+  }
+
+  .apt-customer {
+    grid-area: customer;
   }
 
   .apt-service {
-    display: none;
+    grid-area: service;
+    display: block;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .apt-badges {
+    grid-area: badges;
   }
 
   .data-table {
