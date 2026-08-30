@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFullReport, useAllLocationAppointments, LOCATIONS } from '../hooks/useReports';
+import api from '../api/client';
 import { Copy, Check, Eye, EyeOff, StickyNote, Wrench, AlertTriangle, Sun, Users, Activity, DollarSign } from 'lucide-react';
 import { ReportCard } from './ReportCard';
+import ReportNoteContent from './ReportNoteContent';
+import AppointmentNoteHistory from './AppointmentNoteHistory';
 import { appendPriceToScheduleLine, getReportAppointmentPriceBadge } from '../utils/reportPricing';
 import './Dashboard.css';
 
@@ -487,20 +490,25 @@ function Dashboard({ user, onLogout }) {
             );
           })()}
 
-          {/* Section 2: Appointment Notes - Sticky Note Grid */}
+          {/* Section 2: Client and Appointment Notes - Sticky Note Grid */}
           {(() => {
             const appointmentsWithNotes = (report.rankedByLikelihood?.filter(
-              apt => apt.customerNote || apt.sellerNote
+              apt => (
+                apt.customerProfileNote ||
+                apt.customerNote ||
+                apt.sellerNote ||
+                apt.appointmentNoteHistoryNoteCount > 0
+              )
             ) || []).sort((a, b) =>
               new Date(a.appointmentTime) - new Date(b.appointmentTime)
             );
             return appointmentsWithNotes.length > 0 && (
               <section className="report-section notes-section">
-                <h2 className="section-title"><StickyNote size={20} className="section-icon" /> Appointment Notes</h2>
-                <div className="card-grid">
+                <h2 className="section-title"><StickyNote size={20} className="section-icon" /> Client &amp; Appointment Notes</h2>
+                <div className="card-grid notes-card-grid">
                   {appointmentsWithNotes.map((apt, i) => (
                     <ReportCard
-                      key={i}
+                      key={`${selectedDate}-${location?.squareId || ''}-${apt.id || i}`}
                       variant="note"
                       time={formatTime(apt.appointmentTime)}
                       customer={titleCase(apt.customerName)}
@@ -508,9 +516,26 @@ function Dashboard({ user, onLogout }) {
                       days={apt.daysSinceLastAppointment}
                       technician={cleanTechName(apt.technicianName)}
                     >
-                      {/* Extra: Notes content */}
-                      {apt.customerNote && <p><strong>Customer:</strong> {apt.customerNote}</p>}
-                      {apt.sellerNote && <p><strong>Business:</strong> {apt.sellerNote}</p>}
+                      {apt.customerProfileNote && (
+                        <ReportNoteContent profileNote={apt.customerProfileNote} />
+                      )}
+                      <AppointmentNoteHistory
+                        currentCustomerNote={apt.customerNote}
+                        currentSellerNote={apt.sellerNote}
+                        initialAppointments={apt.appointmentNoteHistory || []}
+                        total={apt.appointmentNoteHistoryTotal || 0}
+                        noteCount={apt.appointmentNoteHistoryNoteCount || 0}
+                        hasMore={apt.appointmentNoteHistoryHasMore}
+                        coveragePending={apt.appointmentNoteHistoryCoveragePending}
+                        coverageUnavailable={apt.appointmentNoteHistoryCoverageUnavailable}
+                        available={apt.appointmentNoteHistoryAvailable}
+                        onLoadMore={(offset, limit) => api.getAppointmentNoteHistory(
+                          selectedDate,
+                          location.squareId,
+                          apt.id,
+                          { offset, limit }
+                        )}
+                      />
                     </ReportCard>
                   ))}
                 </div>

@@ -305,15 +305,360 @@
 }
 
 /* Note content styling */
-.report-card.note .report-card-extra p {
-  margin: 0 0 6px 0;
+.report-note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report-note-entry {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.report-note-entry.profile {
+  margin-bottom: 2px;
+  padding: 8px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 6px;
+  background: rgba(239, 246, 255, 0.72);
+}
+
+.report-note-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(120, 113, 108, 0.12);
+  color: #57534e;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.report-note-entry.profile .report-note-label {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.report-note-entry.business .report-note-label {
+  background: rgba(124, 58, 237, 0.1);
+  color: #6d28d9;
+}
+
+.report-card.note .report-note-entry p {
+  min-width: 0;
+  margin: 0;
   color: #44403c;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
-.report-card.note .report-card-extra p:last-child {
-  margin-bottom: 0;
+/* Appointment-specific notes stay chronological and visually subordinate to
+   the persistent client profile note. */
+.appointment-note-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.report-card.note .report-card-extra strong {
+.report-note-list + .appointment-note-history {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(120, 83, 9, 0.25);
+}
+
+.current-appointment-note,
+.note-trail {
+  border: 1px solid rgba(120, 83, 9, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.current-appointment-note {
+  padding: 10px;
+}
+
+.current-appointment-note h3,
+.note-trail h3 {
+  margin: 0;
+  color: #713f12;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.015em;
+}
+
+.current-appointment-note .report-note-list {
+  margin-top: 8px;
+}
+
+.current-note-empty,
+.note-history-message {
+  margin: 7px 0 0;
   color: #78716c;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.note-trail {
+  padding: 10px;
+}
+
+.note-trail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.note-trail-heading p {
+  margin: 3px 0 0;
+  color: #78716c;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.note-trail-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-trail-list::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: rgba(161, 98, 7, 0.18);
+}
+
+.note-trail-item {
+  position: relative;
+  padding-left: 20px;
+}
+
+.note-trail-dot {
+  position: absolute;
+  z-index: 1;
+  top: 16px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fef9c3;
+  border-radius: 50%;
+  background: #a8a29e;
+  box-shadow: 0 0 0 1px rgba(120, 83, 9, 0.22);
+}
+
+.note-trail-item.has-note .note-trail-dot {
+  background: #ca8a04;
+}
+
+.note-trail-item.selected .note-trail-dot {
+  background: #2563eb;
+}
+
+.note-trail-row {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 9px;
+  border: 1px solid rgba(120, 83, 9, 0.13);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.56);
+  color: #44403c;
+  font: inherit;
+  text-align: left;
+}
+
+button.note-trail-row {
+  cursor: pointer;
+}
+
+button.note-trail-row:hover {
+  border-color: rgba(202, 138, 4, 0.45);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+button.note-trail-row:focus-visible,
+.note-history-more:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.note-trail-item.selected .note-trail-row {
+  border-color: rgba(37, 99, 235, 0.36);
+  background: rgba(239, 246, 255, 0.76);
+}
+
+.note-trail-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.note-trail-row time {
+  min-width: 0;
+  color: #57534e;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.note-trail-status {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(22, 101, 52, 0.1);
+  color: #166534;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.note-trail-status.cancelled {
+  background: rgba(185, 28, 28, 0.1);
+  color: #991b1b;
+}
+
+.note-trail-status.no-show {
+  background: rgba(124, 45, 18, 0.12);
+  color: #7c2d12;
+}
+
+.note-trail-service {
+  margin-top: 4px;
+  overflow: hidden;
+  color: #292524;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-trail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 9px;
+  margin-top: 2px;
+  color: #78716c;
+  font-size: 9px;
+}
+
+.note-trail-meta span + span::before {
+  content: '·';
+  margin-right: 9px;
+}
+
+.note-trail-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.note-type-indicator {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(120, 113, 108, 0.11);
+  color: #57534e;
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.note-type-indicator.business {
+  background: rgba(124, 58, 237, 0.1);
+  color: #6d28d9;
+}
+
+.note-trail-empty {
+  color: #a8a29e;
+  font-size: 9px;
+  font-style: italic;
+}
+
+.note-trail-detail {
+  margin: 6px 0 2px;
+  padding: 9px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 7px;
+  background: rgba(239, 246, 255, 0.72);
+}
+
+.note-history-more {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(161, 98, 7, 0.28);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.66);
+  color: #854d0e;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.note-history-more:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.note-history-more:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.note-history-error,
+.note-history-coverage {
+  margin: 8px 0 0;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.note-history-error {
+  color: #b91c1c;
+}
+
+.note-history-coverage {
+  color: #78716c;
+}
+
+@media (max-width: 480px) {
+  .notes-section .card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .report-note-entry {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .report-note-label {
+    justify-self: start;
+  }
+
+  .note-trail-row-top {
+    align-items: flex-start;
+  }
+
+  .note-trail-row time {
+    font-size: 9px;
+  }
 }

@@ -94,6 +94,16 @@ class ReportsAPIClient {
     return this.request(`/full/${date}/${locationId}`);
   }
 
+  async getAppointmentNoteHistory(date, locationId, appointmentId, { offset = 0, limit = 5 } = {}) {
+    const query = new URLSearchParams({
+      offset: String(offset),
+      limit: String(limit),
+    });
+    return this.request(
+      `/full/${date}/${locationId}/${encodeURIComponent(appointmentId)}/note-history?${query.toString()}`
+    );
+  }
+
   // Get all appointments across all locations for a date (for cross-location duplicate detection)
   async getAllLocationAppointments(date) {
     return this.request(`/all-locations/${date}`);

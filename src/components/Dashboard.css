@@ -1085,6 +1085,11 @@
   padding: 20px;
 }
 
+.notes-section .notes-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
 @media (max-width: 1400px) {
   .card-grid {
     grid-template-columns: repeat(4, 1fr);
@@ -1102,6 +1107,10 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     padding: 12px;
+  }
+
+  .notes-section .notes-card-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
