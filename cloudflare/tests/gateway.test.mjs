@@ -496,6 +496,12 @@ test('wrangler configs declare exact approved routes and protected origin secret
       binding: 'KIOSK_RELEASE_POLICY_KV',
       id: '62298b62c8a644898c7f0aa5c875b075',
     }]);
+    assert.deepEqual(config.d1_databases, [{
+      binding: 'REPORTS_GOVERNANCE_DB',
+      database_name: 'reports-governance',
+      database_id: '28efe201-bcfa-4e1e-8549-fa019e5d7998',
+      migrations_dir: './migrations',
+    }]);
     assert.deepEqual([...(config.secrets?.required || [])].sort(), requiredSecrets);
   }
 });

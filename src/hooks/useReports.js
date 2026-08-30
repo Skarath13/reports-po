@@ -14,16 +14,16 @@ export const LOCATIONS = [
 const reportCache = new Map();
 
 // Helper to get cache key
-function getCacheKey(locationId, date) {
+function getCacheKey(locationId, date, viewerId) {
   const location = LOCATIONS.find(l => l.id === locationId || l.squareId === locationId);
   const squareId = location?.squareId || locationId;
-  return `${squareId}-${date}`;
+  return `${viewerId || 'anonymous'}-${squareId}-${date}`;
 }
 
 // Helper to get fresh cached data (returns null if stale/missing)
-function getFreshCachedData(locationId, date) {
+function getFreshCachedData(locationId, date, viewerId) {
   if (!locationId || !date) return null;
-  const cacheKey = getCacheKey(locationId, date);
+  const cacheKey = getCacheKey(locationId, date, viewerId);
   if (reportCache.has(cacheKey)) {
     const cached = reportCache.get(cacheKey);
     if (Date.now() - cached.timestamp < 60000) {
@@ -34,19 +34,16 @@ function getFreshCachedData(locationId, date) {
 }
 
 // Hook for fetching a single location's full report with caching
-export function useFullReport(locationId, date) {
-  // Initialize from cache synchronously to avoid flicker
-  const initialCache = getFreshCachedData(locationId, date);
-
-  const [data, setData] = useState(initialCache?.data || null);
-  const [loading, setLoading] = useState(!initialCache);
+export function useFullReport(locationId, date, viewerId) {
+  // Cached report contents are not rendered until the governance view event is
+  // confirmed. This keeps a D1 outage from bypassing the audited-view gate.
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(Boolean(locationId && date));
   const [error, setError] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(
-    initialCache ? new Date(initialCache.timestamp) : null
-  );
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   // Track current location to detect changes
-  const currentLocationRef = useRef(locationId);
+  const currentContextRef = useRef(`${locationId || ''}|${date || ''}|${viewerId || ''}`);
 
   // Track current request to handle race conditions
   const requestIdRef = useRef(0);
@@ -54,14 +51,16 @@ export function useFullReport(locationId, date) {
 
   // When location changes, immediately check cache
   useEffect(() => {
-    if (currentLocationRef.current !== locationId) {
-      currentLocationRef.current = locationId;
-      const cached = getFreshCachedData(locationId, date);
+    const contextKey = `${locationId || ''}|${date || ''}|${viewerId || ''}`;
+    if (currentContextRef.current !== contextKey) {
+      currentContextRef.current = contextKey;
+      const cached = getFreshCachedData(locationId, date, viewerId);
       if (cached) {
-        // Serve from cache immediately - no loading needed
-        setData(cached.data);
-        setLastUpdated(new Date(cached.timestamp));
-        setLoading(false);
+        // The cache entry was created only after the original full-report
+        // request recorded its view.
+        setData(null);
+        setLastUpdated(null);
+        setLoading(true);
         setError(null);
       } else {
         // No cache - will need to fetch, show loading
@@ -69,17 +68,22 @@ export function useFullReport(locationId, date) {
         setLoading(true);
       }
     }
-  }, [locationId, date]);
+  }, [locationId, date, viewerId]);
 
   const fetchReport = useCallback(async (forceRefresh = false) => {
-    if (!locationId || !date) return;
+    if (!locationId || !date) {
+      setLoading(false);
+      return;
+    }
 
-    const cacheKey = getCacheKey(locationId, date);
+    const cacheKey = getCacheKey(locationId, date, viewerId);
 
     // Check cache first (unless forcing refresh)
     if (!forceRefresh) {
-      const cached = getFreshCachedData(locationId, date);
+      const cached = getFreshCachedData(locationId, date, viewerId);
       if (cached) {
+        // The original full-report request already records this view. Cache
+        // hits do not create a new audited action.
         setData(cached.data);
         setLastUpdated(new Date(cached.timestamp));
         setError(null);
@@ -128,7 +132,7 @@ export function useFullReport(locationId, date) {
         setLoading(false);
       }
     }
-  }, [locationId, date]);
+  }, [locationId, date, viewerId]);
 
   // Fetch on mount and when location/date changes
   useEffect(() => {

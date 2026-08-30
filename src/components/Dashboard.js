@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFullReport, useAllLocationAppointments, LOCATIONS } from '../hooks/useReports';
 import api from '../api/client';
-import { Copy, Check, Eye, EyeOff, StickyNote, Wrench, AlertTriangle, Sun, Users, Activity, DollarSign } from 'lucide-react';
+import { Copy, Check, Eye, EyeOff, StickyNote, Wrench, AlertTriangle, Sun, Users, Activity, DollarSign, ClipboardCheck, ShieldCheck } from 'lucide-react';
 import { ReportCard } from './ReportCard';
 import ReportNoteContent from './ReportNoteContent';
 import AppointmentNoteHistory from './AppointmentNoteHistory';
+import ReportAuditPanel from './ReportAuditPanel';
 import { appendPriceToScheduleLine, getReportAppointmentPriceBadge } from '../utils/reportPricing';
 import './Dashboard.css';
+
+const KATELYN_AUDIT_VIEWER_ID = '9dee6da3-789a-46de-88f2-128385b2a4c0';
 
 // Skeleton loader component
 function SkeletonLoader() {
@@ -185,6 +188,19 @@ function formatGeneratedTime(isoString) {
   });
 }
 
+function formatPacificDateTime(isoString) {
+  if (!isoString) return '';
+  return new Date(isoString).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/Los_Angeles',
+    timeZoneName: 'short',
+  });
+}
+
 // Get likelihood color - vibrant colors for dots
 function getLikelihoodStyle(likelihood) {
   if (likelihood >= 50) return { bg: '#fecaca', text: '#991b1b', dot: '#ef4444' }; // Bright red
@@ -302,6 +318,10 @@ function Dashboard({ user, onLogout }) {
   const [selectedDate, setSelectedDate] = useState(getTodayPST());
   const [hideNames, setHideNames] = useState(getStoredHideNames);
   const [showPrices, setShowPrices] = useState(getStoredShowPrices);
+  const [mySignoff, setMySignoff] = useState(null);
+  const [signoffLoading, setSignoffLoading] = useState(false);
+  const [signoffError, setSignoffError] = useState(null);
+  const [showAudit, setShowAudit] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const prevLocationRef = useRef(selectedLocation);
 
@@ -340,11 +360,58 @@ function Dashboard({ user, onLogout }) {
   const location = LOCATIONS.find(l => l.id === selectedLocation);
   const { data: report, loading, error, lastUpdated, refresh } = useFullReport(
     location?.squareId,
-    selectedDate
+    selectedDate,
+    user?.id
   );
 
   // Fetch all-location appointments for cross-location duplicate detection
   const { data: allLocationData } = useAllLocationAppointments(selectedDate);
+
+  // Keep the visibility hint aligned with the Worker's authoritative,
+  // stable-ID audit authorization. Usernames are mutable display values.
+  const canViewGovernanceAudit = user?.id === KATELYN_AUDIT_VIEWER_ID;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!location || !user) {
+      setMySignoff(null);
+      return undefined;
+    }
+
+    setMySignoff(null);
+    setSignoffLoading(true);
+    setSignoffError(null);
+    api.getMySignoff(selectedDate, location.id)
+      .then((data) => {
+        if (!cancelled) setMySignoff(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setSignoffError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setSignoffLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location, selectedDate, user]);
+
+  const handleSignoff = async () => {
+    if (!location || !isToday || signoffLoading || mySignoff?.signedOff) return;
+
+    setSignoffLoading(true);
+    setSignoffError(null);
+    try {
+      const data = await api.submitSignoff(selectedDate, location.id);
+      setMySignoff(data);
+    } catch (err) {
+      setSignoffError(err.message);
+    } finally {
+      setSignoffLoading(false);
+    }
+  };
 
   // Track location changes for transition effect
   useEffect(() => {
@@ -409,6 +476,11 @@ function Dashboard({ user, onLogout }) {
             </svg>
             {loading ? 'Refreshing' : 'Refresh'}
           </button>
+          {canViewGovernanceAudit && (
+            <button className="audit-btn" onClick={() => setShowAudit(true)}>
+              <ShieldCheck size={15} /> Audit
+            </button>
+          )}
           <span className="user-name">{user?.username ? user.username.charAt(0).toUpperCase() + user.username.slice(1) : ''}</span>
           <button onClick={onLogout} className="logout-btn">Logout</button>
         </div>
@@ -436,9 +508,57 @@ function Dashboard({ user, onLogout }) {
         <div className="error-state">Error: {error}</div>
       )}
 
+      {showAudit && canViewGovernanceAudit && (
+        <div className="report-content audit-panel-shell">
+          <ReportAuditPanel
+            initialDate={selectedDate}
+            onClose={() => setShowAudit(false)}
+            formatDateTime={formatPacificDateTime}
+          />
+        </div>
+      )}
+
       {/* Main Report Content */}
       {report && !showSkeleton && (
         <main className="report-content">
+          <section className="report-section signoff-section">
+            <div className="signoff-header">
+              <div>
+                <h2 className="section-title"><ClipboardCheck size={20} className="section-icon" /> Daily Review Checklist</h2>
+                <p className="signoff-description">
+                  Confirm that you reviewed the {location?.name} report for {formatDate(selectedDate)}.
+                </p>
+              </div>
+              <div className={`signoff-status ${mySignoff?.signedOff ? 'complete' : ''}`}>
+                {mySignoff?.signedOff ? <Check size={18} /> : <span className="signoff-empty-dot" />}
+                {mySignoff?.signedOff ? 'Reviewed' : 'Not yet reviewed'}
+              </div>
+            </div>
+            <div className="signoff-body">
+              <label className={`signoff-control ${mySignoff?.signedOff ? 'complete' : ''} ${!isToday ? 'disabled' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(mySignoff?.signedOff)}
+                  onChange={handleSignoff}
+                  disabled={!isToday || signoffLoading || Boolean(mySignoff?.signedOff)}
+                  aria-label={`Mark ${location?.name} report reviewed`}
+                />
+                <span className="custom-checkbox" aria-hidden="true">
+                  {mySignoff?.signedOff && <Check size={15} />}
+                </span>
+                <span>
+                  <strong>{mySignoff?.signedOff ? 'You marked this report reviewed.' : 'I reviewed this report.'}</strong>
+                  {mySignoff?.signedAtUtc && (
+                    <small>Recorded {formatPacificDateTime(mySignoff.signedAtUtc)}</small>
+                  )}
+                  {!isToday && <small>Sign-off opens on today’s Pacific report only.</small>}
+                </span>
+              </label>
+              {signoffLoading && <span className="signoff-saving">Saving…</span>}
+              {signoffError && <span className="signoff-error">{signoffError}</span>}
+            </div>
+          </section>
+
           {/* Section 1: Calendar List View - 2 columns max */}
           {(() => {
             // Create lookup map for likelihood data from rankedByLikelihood
@@ -701,21 +821,27 @@ function Dashboard({ user, onLogout }) {
 }
 
 // Technician Column Component with Copy functionality
+function formatAppointmentClipboardLine(appointment, hideNames, showPrices) {
+  const time = formatTime(appointment.appointmentTime);
+  const days = appointment.daysSinceLastAppointment == null
+    ? 'New'
+    : `${appointment.daysSinceLastAppointment}d`;
+  const service = abbreviateService(appointment.serviceName);
+  const baseLine = hideNames
+    ? `${time} - ${service} (${days})`
+    : `${time} - ${titleCase(appointment.customerName)} - ${service} (${days})`;
+
+  return appendPriceToScheduleLine(baseLine, appointment, showPrices);
+}
+
 function TechnicianColumn({ name, appointments, hideNames, showPrices, likelihoodMap }) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
     // Clean plain text format for easy iMessage sharing
-    const lines = appointments.map(apt => {
-      const time = formatTime(apt.appointmentTime);
-      const days = apt.daysSinceLastAppointment === null ? 'New' : `${apt.daysSinceLastAppointment}d`;
-      const service = abbreviateService(apt.serviceName);
-      const baseLine = hideNames
-        ? `${time} - ${service} (${days})`
-        : `${time} - ${titleCase(apt.customerName)} - ${service} (${days})`;
-
-      return appendPriceToScheduleLine(baseLine, apt, showPrices);
-    }).join('\n');
+    const lines = appointments.map(
+      appointment => formatAppointmentClipboardLine(appointment, hideNames, showPrices)
+    ).join('\n');
 
     navigator.clipboard.writeText(lines).then(() => {
       setCopied(true);
@@ -829,9 +955,12 @@ function buildRiskTooltip(score, components, reason) {
 
 // Single Appointment Row - Clean Excel-like styling
 function AppointmentRow({ appointment, hideNames, showPrices, likelihoodMap }) {
+  const [copyStatus, setCopyStatus] = useState('idle');
+  const copyResetRef = useRef(null);
   const daysStyle = getDaysSinceStyle(appointment.daysSinceLastAppointment);
   const shortService = abbreviateService(appointment.serviceName);
   const priceBadge = showPrices ? getReportAppointmentPriceBadge(appointment) : null;
+  const appointmentTime = formatTime(appointment.appointmentTime);
 
   // Get likelihood data from map (using appointment.id) or from appointment directly
   const likelihoodData = likelihoodMap?.[appointment.id];
@@ -843,12 +972,41 @@ function AppointmentRow({ appointment, hideNames, showPrices, likelihoodMap }) {
   // Build enhanced tooltip with score breakdown
   const tooltip = buildRiskTooltip(likelihood, components, reason);
 
+  useEffect(() => () => {
+    if (copyResetRef.current) clearTimeout(copyResetRef.current);
+  }, []);
+
+  const copyAppointment = async (event) => {
+    event.stopPropagation();
+    if (copyResetRef.current) clearTimeout(copyResetRef.current);
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard API unavailable');
+      }
+      await navigator.clipboard.writeText(
+        formatAppointmentClipboardLine(appointment, hideNames, showPrices)
+      );
+      setCopyStatus('copied');
+    } catch (_error) {
+      setCopyStatus('failed');
+    }
+
+    copyResetRef.current = setTimeout(() => setCopyStatus('idle'), 2000);
+  };
+
+  const copyLabel = copyStatus === 'copied'
+    ? `Copied ${appointmentTime} appointment`
+    : copyStatus === 'failed'
+      ? `Copy failed for ${appointmentTime} appointment`
+      : `Copy ${appointmentTime} appointment`;
+
   return (
     <div
       className={`appointment-row ${hideNames ? 'hide-names' : ''}`}
       title={hideNames ? appointment.serviceName : `${titleCase(appointment.customerName)} - ${appointment.serviceName}`}
     >
-      <span className="apt-time">{formatTime(appointment.appointmentTime)}</span>
+      <span className="apt-time">{appointmentTime}</span>
       {!hideNames && (
         <span className="apt-customer">
           <span className="apt-customer-name">{titleCase(appointment.customerName)}</span>
@@ -880,8 +1038,18 @@ function AppointmentRow({ appointment, hideNames, showPrices, likelihoodMap }) {
           </span>
         )}
       </span>
+      <button
+        type="button"
+        className={`row-copy-btn ${copyStatus}`}
+        onClick={copyAppointment}
+        aria-label={copyLabel}
+        title={copyStatus === 'copied' ? 'Copied!' : copyStatus === 'failed' ? 'Could not copy. Try again.' : 'Copy appointment'}
+      >
+        {copyStatus === 'copied' ? <Check size={14} /> : <Copy size={14} />}
+      </button>
     </div>
   );
 }
 
+export { AppointmentRow, formatAppointmentClipboardLine };
 export default Dashboard;

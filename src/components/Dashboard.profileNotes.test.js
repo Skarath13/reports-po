@@ -5,7 +5,9 @@ import Dashboard from './Dashboard';
 jest.mock('../api/client', () => ({
   __esModule: true,
   default: {
-    getAppointmentNoteHistory: jest.fn(),
+    getMySignoff: () => Promise.resolve({ signedOff: false, signedAtUtc: null }),
+    submitSignoff: () => Promise.resolve({ signedOff: true }),
+    getAudit: () => Promise.resolve({}),
   },
 }));
 

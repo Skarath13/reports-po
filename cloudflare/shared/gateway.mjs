@@ -370,6 +370,17 @@ async function handleEdgeHealth(env, config) {
 async function handleRequest(request, env = {}, config) {
   const url = new URL(request.url);
 
+  if (config.customHandler) {
+    const customResponse = await config.customHandler(request, env, {
+      jsonResponse,
+      proxyToOrigin: (customRequest = request) => proxyToOrigin(customRequest, env, config),
+    });
+
+    if (customResponse) {
+      return customResponse;
+    }
+  }
+
   if (url.pathname === '/__edge/health') {
     return handleEdgeHealth(env, config);
   }
@@ -397,6 +408,7 @@ export function createAppWorker(options = {}) {
   const config = {
     appName: options.appName || 'checkin-edge',
     fetcher: options.fetcher || ((resource, init) => fetch(resource, init)),
+    customHandler: options.customHandler || null,
   };
 
   return {

@@ -428,7 +428,7 @@
 /* Appointment Row - Clean Excel-like Styling */
 .appointment-row {
   display: grid;
-  grid-template-columns: 80px 1fr auto 50px;
+  grid-template-columns: 80px minmax(0, 1fr) minmax(0, auto) auto 32px;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -557,6 +557,49 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
 }
 
+.row-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.appointment-row:hover .row-copy-btn,
+.row-copy-btn:focus-visible {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+  opacity: 1;
+}
+
+.row-copy-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.row-copy-btn.copied {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #059669;
+  opacity: 1;
+}
+
+.row-copy-btn.failed {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  opacity: 1;
+}
+
 /* Hidden names mode - compact left-aligned layout */
 .appointment-row.hide-names {
   display: flex;
@@ -582,6 +625,11 @@
 
 .appointment-row.hide-names .apt-badges {
   flex-shrink: 0;
+}
+
+.appointment-row.hide-names .row-copy-btn {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* Data Tables */
@@ -887,18 +935,18 @@
   }
 
   .appointment-row {
-    grid-template-columns: 72px minmax(0, 1fr) auto;
+    grid-template-columns: 72px minmax(0, 1fr) auto 36px;
     grid-template-areas:
-      "time customer badges"
-      "time service badges";
+      "time customer badges action"
+      "time service badges action";
     gap: 8px;
     padding: 8px 10px;
   }
 
   .appointment-row.hide-names {
     display: grid;
-    grid-template-columns: 72px minmax(0, 1fr) auto;
-    grid-template-areas: "time service badges";
+    grid-template-columns: 72px minmax(0, 1fr) auto 36px;
+    grid-template-areas: "time service badges action";
   }
 
   .apt-time {
@@ -920,6 +968,16 @@
 
   .apt-badges {
     grid-area: badges;
+  }
+
+  .row-copy-btn {
+    grid-area: action;
+    width: 36px;
+    height: 36px;
+  }
+
+  .appointment-row.hide-names .row-copy-btn {
+    margin-left: 0;
   }
 
   .data-table {
@@ -947,6 +1005,7 @@
 
   .refresh-btn,
   .logout-link,
+  .row-copy-btn,
   .location-tabs {
     display: none;
   }
@@ -1338,4 +1397,400 @@
 .notes-section .section-title {
   background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
   color: #713f12;
+}
+
+/* ====================================
+   DAILY SIGN-OFF AND KATELYN AUDIT
+   ==================================== */
+
+.audit-btn,
+.audit-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.audit-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: white;
+  padding: 7px 12px;
+}
+
+.audit-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.signoff-section {
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+}
+
+.signoff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 20px;
+  background: #eff6ff;
+}
+
+.signoff-header .section-title {
+  padding-left: 0;
+  background: transparent;
+  border-bottom: none;
+}
+
+.signoff-description {
+  margin: -8px 0 16px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.signoff-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.signoff-status.complete {
+  color: #047857;
+}
+
+.signoff-empty-dot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #94a3b8;
+  border-radius: 50%;
+}
+
+.signoff-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  padding: 16px 20px;
+}
+
+.signoff-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #1e293b;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.signoff-control input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.custom-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #94a3b8;
+  border-radius: 6px;
+  color: white;
+  background: white;
+}
+
+.signoff-control:hover:not(.disabled) .custom-checkbox {
+  border-color: #2563eb;
+}
+
+.signoff-control.complete .custom-checkbox {
+  border-color: #059669;
+  background: #059669;
+}
+
+.signoff-control.disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.signoff-control > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.signoff-control small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.signoff-saving {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.signoff-error,
+.audit-error {
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.audit-panel {
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.12);
+}
+
+.audit-panel-header,
+.audit-toolbar,
+.audit-section-title,
+.audit-list-row {
+  display: flex;
+  align-items: center;
+}
+
+.audit-panel-header {
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.audit-panel-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #1e3a5f;
+  font-size: 18px;
+}
+
+.audit-panel-header p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.audit-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  color: #475569;
+  cursor: pointer;
+}
+
+.audit-close-btn:hover {
+  background: #f1f5f9;
+}
+
+.audit-toolbar {
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.audit-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.audit-toolbar input {
+  padding: 7px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  color: #1e293b;
+  font: inherit;
+}
+
+.audit-refresh-btn {
+  padding: 8px 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.audit-refresh-btn:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.audit-refresh-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.audit-error,
+.audit-empty {
+  margin: 8px 0 16px;
+}
+
+.audit-empty {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.audit-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.audit-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #f8fafc;
+}
+
+.audit-summary strong {
+  color: #1e3a5f;
+  font-size: 18px;
+}
+
+.audit-summary span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.audit-section {
+  margin-top: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.audit-section-title {
+  gap: 7px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.audit-section-title h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.audit-matrix-wrap {
+  overflow-x: auto;
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.audit-table th,
+.audit-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  vertical-align: top;
+}
+
+.audit-table thead th {
+  color: #475569;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.audit-table tbody th {
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.audit-table tbody tr:last-child th,
+.audit-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.audit-complete {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  color: #047857;
+  font-weight: 600;
+}
+
+.audit-complete span {
+  max-width: 120px;
+}
+
+.audit-pending {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.audit-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.audit-list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.audit-list-row {
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+}
+
+.audit-list-row:last-child {
+  border-bottom: none;
+}
+
+.audit-list-row strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .signoff-header,
+  .audit-panel-header,
+  .audit-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .signoff-status {
+    padding-bottom: 14px;
+  }
+
+  .audit-summary,
+  .audit-detail-grid {
+    grid-template-columns: 1fr;
+  }
 }

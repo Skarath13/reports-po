@@ -8,6 +8,7 @@ const API_BASE = process.env.REACT_APP_API_URL || '/api/reports';
 class ReportsAPIClient {
   constructor() {
     this.token = localStorage.getItem('reportToken');
+    this.viewSessionId = null;
   }
 
   setToken(token) {
@@ -21,6 +22,34 @@ class ReportsAPIClient {
 
   getToken() {
     return this.token || localStorage.getItem('reportToken');
+  }
+
+  getViewSessionId() {
+    if (this.viewSessionId) return this.viewSessionId;
+
+    try {
+      const stored = sessionStorage.getItem('reportsViewSession');
+      if (stored) {
+        this.viewSessionId = stored;
+        return stored;
+      }
+    } catch (_error) {
+      // Fall through to an in-memory session when sessionStorage is unavailable.
+    }
+
+    const cryptoApi = typeof window !== 'undefined' ? window.crypto : null;
+    const generated = cryptoApi?.randomUUID
+      ? cryptoApi.randomUUID()
+      : `reports-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    this.viewSessionId = generated;
+    try {
+      sessionStorage.setItem('reportsViewSession', generated);
+    } catch (_error) {
+      // An in-memory session still deduplicates requests for this page lifetime.
+    }
+
+    return generated;
   }
 
   async request(endpoint, options = {}) {
@@ -91,7 +120,11 @@ class ReportsAPIClient {
   }
 
   async getFullReport(date, locationId) {
-    return this.request(`/full/${date}/${locationId}`);
+    return this.request(`/full/${date}/${locationId}`, {
+      headers: {
+        'x-report-view-session': this.getViewSessionId(),
+      },
+    });
   }
 
   async getAppointmentNoteHistory(date, locationId, appointmentId, { offset = 0, limit = 5 } = {}) {
@@ -102,6 +135,23 @@ class ReportsAPIClient {
     return this.request(
       `/full/${date}/${locationId}/${encodeURIComponent(appointmentId)}/note-history?${query.toString()}`
     );
+  }
+
+  async getMySignoff(date, locationId) {
+    const query = new URLSearchParams({ date, locationId });
+    return this.request(`/governance/signoffs?${query.toString()}`);
+  }
+
+  async submitSignoff(date, locationId) {
+    return this.request('/governance/signoffs', {
+      method: 'POST',
+      body: JSON.stringify({ reportDate: date, locationId }),
+    });
+  }
+
+  async getAudit(date) {
+    const query = new URLSearchParams({ date });
+    return this.request(`/governance/audit?${query.toString()}`);
   }
 
   // Get all appointments across all locations for a date (for cross-location duplicate detection)
