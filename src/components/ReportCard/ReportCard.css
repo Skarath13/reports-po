@@ -273,26 +273,30 @@
 }
 
 /* =====================================
-   VARIANT: NOTE (Yellow Post-it)
+   VARIANT: NOTE (Warm card with distinct current notes)
    ===================================== */
 
 .report-card.note {
-  --rc-bg-start: #fef9c3;
-  --rc-bg-end: #fef9c3;
-  --rc-border-color: transparent;
-  --rc-shadow-color: rgba(0, 0, 0, 0.12);
+  --rc-bg-start: #fffefb;
+  --rc-bg-end: #fffefb;
+  --rc-border-color: #eadfbe;
+  --rc-shadow-color: rgba(120, 83, 9, 0.07);
   --rc-time-color: #1e40af;
   --rc-customer-color: #1e293b;
   --rc-service-color: #64748b;
   --rc-tech-bg: rgba(124, 58, 237, 0.1);
   --rc-tech-color: #7c3aed;
-  --rc-extra-border: #d4a90a;
+  --rc-extra-border: #e9e2cf;
 
-  border-radius: 4px;
-  box-shadow: 2px 3px 8px var(--rc-shadow-color);
+  border-radius: 12px;
 }
 
-/* Post-it top accent bar */
+.report-card.note:hover {
+  transform: none;
+  box-shadow: 0 3px 12px var(--rc-shadow-color);
+}
+
+/* Retain the notes section's warm accent. */
 .report-card.note::before {
   content: '';
   position: absolute;
@@ -301,7 +305,7 @@
   right: 0;
   height: 4px;
   background: #eab308;
-  border-radius: 4px 4px 0 0;
+  border-radius: 12px 12px 0 0;
 }
 
 /* Note content styling */
@@ -362,8 +366,7 @@
   white-space: pre-wrap;
 }
 
-/* Appointment-specific notes stay chronological and visually subordinate to
-   the persistent client profile note. */
+/* Current notes stay visible; past appointments are a separate disclosure. */
 .appointment-note-history {
   display: flex;
   flex-direction: column;
@@ -372,59 +375,146 @@
 
 .report-note-list + .appointment-note-history {
   margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed rgba(120, 83, 9, 0.25);
 }
 
 .current-appointment-note,
 .note-trail {
-  border: 1px solid rgba(120, 83, 9, 0.14);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.42);
+  min-width: 0;
+  border-radius: 9px;
 }
 
 .current-appointment-note {
-  padding: 10px;
+  padding: 12px;
+  border: 1px solid #b8ded5;
+  border-left: 4px solid #0d9488;
+  background: #ecfdf5;
 }
 
-.current-appointment-note h3,
-.note-trail h3 {
+.current-appointment-note h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   margin: 0;
-  color: #713f12;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.015em;
+  color: #115e59;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.current-appointment-note h3 svg {
+  flex-shrink: 0;
 }
 
 .current-appointment-note .report-note-list {
-  margin-top: 8px;
+  margin-top: 12px;
+  gap: 10px;
+}
+
+.current-appointment-note .report-note-label {
+  font-size: 10px;
+}
+
+.report-card.note .current-appointment-note .report-note-entry p {
+  color: #134e4a;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.current-appointment-note .report-note-entry + .report-note-entry {
+  padding-top: 10px;
+  border-top: 1px solid #cce8df;
+}
+
+.current-appointment-note.is-empty {
+  border-color: #e2e8f0;
+  border-left-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.current-appointment-note.is-empty h3 {
+  color: #475569;
 }
 
 .current-note-empty,
 .note-history-message {
   margin: 7px 0 0;
-  color: #78716c;
+  color: #64748b;
   font-size: 12px;
-  font-style: italic;
 }
 
 .note-trail {
-  padding: 10px;
+  border: 1px solid #dce3eb;
+  background: #f8fafc;
 }
 
 .note-trail-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  margin: 0;
 }
 
-.note-trail-heading p {
-  margin: 3px 0 0;
-  color: #78716c;
-  font-size: 10px;
-  font-weight: 600;
+.note-history-toggle {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.note-history-toggle:hover {
+  background: #edf2f7;
+}
+
+.note-history-toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -3px;
+}
+
+.note-history-toggle svg {
+  flex-shrink: 0;
+}
+
+.note-history-summary {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-history-title,
+.note-history-count {
+  display: block;
+}
+
+.note-history-title {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.note-history-count {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.note-history-chevron {
+  transition: transform 0.15s ease;
+}
+
+.note-history-toggle[aria-expanded="true"] .note-history-chevron {
+  transform: rotate(180deg);
+}
+
+.note-trail-content {
+  padding: 12px;
+  border-top: 1px solid #dce3eb;
 }
 
 .note-trail-list {
@@ -442,7 +532,7 @@
   left: 6px;
   width: 2px;
   border-radius: 2px;
-  background: rgba(161, 98, 7, 0.18);
+  background: #dce3eb;
 }
 
 .note-trail-item {
@@ -457,10 +547,10 @@
   left: 2px;
   width: 10px;
   height: 10px;
-  border: 2px solid #fef9c3;
+  border: 2px solid #f8fafc;
   border-radius: 50%;
   background: #a8a29e;
-  box-shadow: 0 0 0 1px rgba(120, 83, 9, 0.22);
+  box-shadow: 0 0 0 1px #cbd5e1;
 }
 
 .note-trail-item.has-note .note-trail-dot {
@@ -478,12 +568,13 @@
   min-height: 44px;
   margin: 0;
   padding: 8px 9px;
-  border: 1px solid rgba(120, 83, 9, 0.13);
+  border: 1px solid #e2e8f0;
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.56);
-  color: #44403c;
+  background: #fff;
+  color: #334155;
   font: inherit;
   text-align: left;
+  overflow-wrap: anywhere;
 }
 
 button.note-trail-row {
@@ -491,8 +582,8 @@ button.note-trail-row {
 }
 
 button.note-trail-row:hover {
-  border-color: rgba(202, 138, 4, 0.45);
-  background: rgba(255, 255, 255, 0.82);
+  border-color: #94a3b8;
+  background: #f1f5f9;
 }
 
 button.note-trail-row:focus-visible,
@@ -510,13 +601,14 @@ button.note-trail-row:focus-visible,
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .note-trail-row time {
   min-width: 0;
-  color: #57534e;
-  font-size: 10px;
+  color: #475569;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -526,7 +618,7 @@ button.note-trail-row:focus-visible,
   border-radius: 999px;
   background: rgba(22, 101, 52, 0.1);
   color: #166534;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.025em;
   text-transform: uppercase;
@@ -544,12 +636,9 @@ button.note-trail-row:focus-visible,
 
 .note-trail-service {
   margin-top: 4px;
-  overflow: hidden;
-  color: #292524;
-  font-size: 11px;
+  color: #334155;
+  font-size: 12px;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .note-trail-meta {
@@ -557,8 +646,12 @@ button.note-trail-row:focus-visible,
   flex-wrap: wrap;
   gap: 3px 9px;
   margin-top: 2px;
-  color: #78716c;
-  font-size: 9px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.note-trail-meta span {
+  min-width: 0;
 }
 
 .note-trail-meta span + span::before {
@@ -578,7 +671,7 @@ button.note-trail-row:focus-visible,
   border-radius: 999px;
   background: rgba(120, 113, 108, 0.11);
   color: #57534e;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -589,9 +682,8 @@ button.note-trail-row:focus-visible,
 }
 
 .note-trail-empty {
-  color: #a8a29e;
-  font-size: 9px;
-  font-style: italic;
+  color: #64748b;
+  font-size: 11px;
 }
 
 .note-trail-detail {
@@ -607,17 +699,17 @@ button.note-trail-row:focus-visible,
   min-height: 44px;
   margin-top: 10px;
   padding: 8px 12px;
-  border: 1px solid rgba(161, 98, 7, 0.28);
+  border: 1px solid #cbd5e1;
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.66);
-  color: #854d0e;
+  background: #fff;
+  color: #334155;
   cursor: pointer;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .note-history-more:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.9);
+  background: #edf2f7;
 }
 
 .note-history-more:disabled {
@@ -628,7 +720,7 @@ button.note-trail-row:focus-visible,
 .note-history-error,
 .note-history-coverage {
   margin: 8px 0 0;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -637,7 +729,13 @@ button.note-trail-row:focus-visible,
 }
 
 .note-history-coverage {
-  color: #78716c;
+  color: #64748b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note-history-chevron {
+    transition: none;
+  }
 }
 
 @media (max-width: 480px) {
@@ -656,9 +754,5 @@ button.note-trail-row:focus-visible,
 
   .note-trail-row-top {
     align-items: flex-start;
-  }
-
-  .note-trail-row time {
-    font-size: 9px;
   }
 }

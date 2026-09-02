@@ -1,4 +1,5 @@
 import React, { useId, useMemo, useState } from 'react';
+import { ChevronDown, History, StickyNote } from 'lucide-react';
 import ReportNoteContent from './ReportNoteContent';
 
 const PAGE_SIZE = 5;
@@ -117,6 +118,7 @@ function HistoryRow({ appointment, selected, onSelect }) {
 export default function AppointmentNoteHistory({
   currentCustomerNote,
   currentSellerNote,
+  isToday = true,
   initialAppointments = [],
   total = 0,
   noteCount = 0,
@@ -140,8 +142,10 @@ export default function AppointmentNoteHistory({
   const [nextOffset, setNextOffset] = useState(initialAppointments.length);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [historyExpanded, setHistoryExpanded] = useState(false);
   const currentTitleId = useId();
   const trailTitleId = useId();
+  const trailContentId = useId();
   const hasCurrentNote = Boolean(currentCustomerNote?.trim() || currentSellerNote?.trim());
   const remaining = Math.max(historyTotal - nextOffset, 0);
 
@@ -172,67 +176,89 @@ export default function AppointmentNoteHistory({
 
   return (
     <div className="appointment-note-history">
-      <section className="current-appointment-note" aria-labelledby={currentTitleId}>
-        <h3 id={currentTitleId}>Today&apos;s appointment</h3>
+      <section
+        className={`current-appointment-note${hasCurrentNote ? '' : ' is-empty'}`}
+        aria-labelledby={currentTitleId}
+      >
+        <h3 id={currentTitleId}>
+          <StickyNote size={16} aria-hidden="true" />
+          {isToday ? "Today's appointment notes" : 'Appointment notes'}
+        </h3>
         {hasCurrentNote ? (
           <ReportNoteContent
             customerNote={currentCustomerNote}
             sellerNote={currentSellerNote}
           />
         ) : (
-          <p className="current-note-empty">No appointment note today</p>
+          <p className="current-note-empty">No notes for this appointment.</p>
         )}
       </section>
 
       <section className="note-trail" aria-labelledby={trailTitleId}>
-        <div className="note-trail-heading">
-          <div>
-            <h3 id={trailTitleId}>Appointment note trail</h3>
-            <p>
-              {historyTotal} past {historyTotal === 1 ? 'appointment' : 'appointments'}
-              {historyNoteCount > 0 && ` · ${historyNoteCount} with notes`}
-            </p>
-          </div>
-        </div>
-
-        {!available ? (
-          <p className="note-history-message">Past appointment notes are temporarily unavailable.</p>
-        ) : appointments.length === 0 ? (
-          <p className="note-history-message">No earlier appointments are available.</p>
-        ) : (
-          <div className="note-trail-list">
-            {appointments.map((appointment) => (
-              <HistoryRow
-                key={appointment.id}
-                appointment={appointment}
-                selected={selectedId === appointment.id}
-                onSelect={() => setSelectedId(
-                  selectedId === appointment.id ? null : appointment.id
-                )}
-              />
-            ))}
-          </div>
-        )}
-
-        {moreAvailable && available && (
+        <h3 className="note-trail-heading">
           <button
             type="button"
-            className="note-history-more"
-            onClick={loadMore}
-            disabled={loadingMore}
+            className="note-history-toggle"
+            aria-expanded={historyExpanded}
+            aria-controls={trailContentId}
+            onClick={() => setHistoryExpanded((expanded) => !expanded)}
           >
-            {loadingMore
-              ? 'Loading older appointments…'
-              : `Show ${Math.min(PAGE_SIZE, remaining || PAGE_SIZE)} older`}
+            <History size={17} aria-hidden="true" />
+            <span className="note-history-summary">
+              <span id={trailTitleId} className="note-history-title">Past appointments</span>
+              <span className="note-history-count">
+                {available ? (
+                  <>
+                    {historyTotal} past {historyTotal === 1 ? 'appointment' : 'appointments'}
+                    {historyNoteCount > 0 && ` · ${historyNoteCount} with notes`}
+                  </>
+                ) : 'History temporarily unavailable'}
+              </span>
+            </span>
+            <ChevronDown size={18} className="note-history-chevron" aria-hidden="true" />
           </button>
-        )}
-        {loadError && <p className="note-history-error" role="alert">{loadError}</p>}
-        {pendingCoverage && (
-          <p className="note-history-coverage">Older archived appointment notes are still being indexed.</p>
-        )}
-        {unavailableCoverage && (
-          <p className="note-history-coverage">Some older appointments could not be checked for notes.</p>
-        )}
+        </h3>
+
+        <div id={trailContentId} className="note-trail-content" hidden={!historyExpanded} aria-busy={loadingMore}>
+          {!available ? (
+            <p className="note-history-message">Past appointment notes are temporarily unavailable.</p>
+          ) : appointments.length === 0 ? (
+            <p className="note-history-message">No earlier appointments are available.</p>
+          ) : (
+            <div className="note-trail-list">
+              {appointments.map((appointment) => (
+                <HistoryRow
+                  key={appointment.id}
+                  appointment={appointment}
+                  selected={selectedId === appointment.id}
+                  onSelect={() => setSelectedId(
+                    selectedId === appointment.id ? null : appointment.id
+                  )}
+                />
+              ))}
+            </div>
+          )}
+
+          {moreAvailable && available && (
+            <button
+              type="button"
+              className="note-history-more"
+              onClick={loadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore
+                ? 'Loading older appointments…'
+                : `Show ${Math.min(PAGE_SIZE, remaining || PAGE_SIZE)} older`}
+            </button>
+          )}
+          {loadError && <p className="note-history-error" role="alert">{loadError}</p>}
+          {pendingCoverage && (
+            <p className="note-history-coverage">Older archived appointment notes are still being indexed.</p>
+          )}
+          {unavailableCoverage && (
+            <p className="note-history-coverage">Some older appointments could not be checked for notes.</p>
+          )}
+        </div>
       </section>
     </div>
   );

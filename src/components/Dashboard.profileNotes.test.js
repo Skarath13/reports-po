@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import Dashboard from './Dashboard';
 
 jest.mock('../api/client', () => ({
@@ -24,8 +24,15 @@ jest.mock('../hooks/useReports', () => ({
       generatedAt: '2026-08-30T17:00:00.000Z',
       technicians: [],
       byTechnician: {},
-      anyoneAvailable: [],
-      totalAppointments: 2,
+      anyoneAvailable: [{
+        id: 'booking-3',
+        customerName: 'Current Notes Client',
+        serviceName: 'Classic Fill',
+        technicianName: 'Technician',
+        appointmentTime: '2026-08-30T19:00:00.000Z',
+        daysSinceLastAppointment: 14,
+      }],
+      totalAppointments: 3,
       rankedByLikelihood: [{
         id: 'booking-1',
         customerName: 'Test Client',
@@ -63,6 +70,19 @@ jest.mock('../hooks/useReports', () => ({
         appointmentNoteHistoryTotal: 1,
         appointmentNoteHistoryNoteCount: 1,
         appointmentNoteHistoryAvailable: true,
+      }, {
+        id: 'booking-3',
+        customerName: 'Current Notes Client',
+        serviceName: 'Classic Fill',
+        technicianName: 'Technician',
+        appointmentTime: '2026-08-30T19:00:00.000Z',
+        daysSinceLastAppointment: 14,
+        customerNote: 'Current appointment request',
+        sellerNote: 'Current business detail',
+        appointmentNoteHistory: [],
+        appointmentNoteHistoryTotal: 0,
+        appointmentNoteHistoryNoteCount: 0,
+        appointmentNoteHistoryAvailable: true,
       }],
     },
     loading: false,
@@ -73,12 +93,36 @@ jest.mock('../hooks/useReports', () => ({
   useAllLocationAppointments: () => ({ data: { appointments: [] } }),
 }));
 
-test('includes profile-only notes in the notes section', async () => {
+test('keeps profile and current notes visible above anyone-available bookings with history collapsed', async () => {
   render(<Dashboard user={{ id: 'ross-id', username: 'Ross' }} onLogout={jest.fn()} />);
 
   expect(await screen.findByRole('heading', { name: 'Client & Appointment Notes' })).toBeInTheDocument();
   expect(screen.getByText('Client profile')).toBeInTheDocument();
-  expect(screen.getByText('Persistent profile preference')).toBeInTheDocument();
+  expect(screen.getByText('Persistent profile preference')).toBeVisible();
+  expect(screen.getByText('Current appointment request')).toBeVisible();
+  expect(screen.getByText('Current business detail')).toBeVisible();
   expect(screen.getByText('History Client')).toBeInTheDocument();
-  expect(screen.getByText('Historic business detail')).toBeInTheDocument();
+  expect(screen.getByText('Historic business detail')).not.toBeVisible();
+
+  const notesHeading = screen.getByRole('heading', { name: 'Client & Appointment Notes' });
+  const anyoneHeading = screen.getByRole('heading', { name: 'Clients Booked for Anyone Available' });
+  expect(notesHeading.compareDocumentPosition(anyoneHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+  fireEvent.click(screen.getByRole('button', { name: /Past appointments 1 past appointment/ }));
+  expect(screen.getByText('Historic business detail')).toBeVisible();
+  expect(screen.getByText('Current appointment request')).toBeVisible();
+});
+
+test('uses a date-neutral current-note heading for tomorrow\'s report', async () => {
+  render(<Dashboard user={{ id: 'ross-id', username: 'Ross' }} onLogout={jest.fn()} />);
+  expect(await screen.findByText('Current appointment request')).toBeVisible();
+  expect(screen.getAllByRole('heading', { name: "Today's appointment notes" })).toHaveLength(3);
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Tomorrow' }));
+  });
+
+  expect(screen.queryByRole('heading', { name: "Today's appointment notes" })).not.toBeInTheDocument();
+  expect(screen.getAllByRole('heading', { name: 'Appointment notes' })).toHaveLength(3);
+  expect(screen.getByText('Current appointment request')).toBeVisible();
 });

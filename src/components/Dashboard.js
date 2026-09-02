@@ -642,6 +642,7 @@ function Dashboard({ user, onLogout }) {
                       <AppointmentNoteHistory
                         currentCustomerNote={apt.customerNote}
                         currentSellerNote={apt.sellerNote}
+                        isToday={isToday}
                         initialAppointments={apt.appointmentNoteHistory || []}
                         total={apt.appointmentNoteHistoryTotal || 0}
                         noteCount={apt.appointmentNoteHistoryNoteCount || 0}
