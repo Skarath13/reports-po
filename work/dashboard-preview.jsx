@@ -325,7 +325,13 @@ function Preview() {
   );
 }
 
-createRoot(document.getElementById('root')).render(
+const root = createRoot(document.getElementById('root'));
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => root.unmount());
+}
+
+root.render(
   <React.StrictMode>
     <Preview />
   </React.StrictMode>,

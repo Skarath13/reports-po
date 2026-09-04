@@ -62,9 +62,10 @@ Widths 320, 390, 736, and 1024 had no page-level horizontal overflow. The final
 mobile navigation check focused the selected heading and reported no warnings
 or errors. The actual production build's login was also inspected in the browser.
 
-A development hot-reload session produced DOM replacement errors while editing
-components. They did not recur on fresh loads or repeated final interactions;
-the final fresh-load browser checks reported no warnings or errors.
+The development preview now unmounts its React root before hot replacement.
+This fixes duplicate-root and DOM replacement errors caused by recreating the
+preview entry during component edits. Two source updates, including one with
+appointment details open, completed without browser warnings or errors.
 
 Main JavaScript is approximately 117.35 kB gzipped, versus 77.12 kB after the
 tooling-only migration. The additional weight comes with the table and accessible
