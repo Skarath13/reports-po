@@ -121,6 +121,7 @@ function renderDashboard(username = 'Ross') {
 }
 
 beforeEach(() => {
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ top: 100, left: 50, bottom: 150, right: 250, width: 200, height: 50 });
   globalThis.__reportsGovernanceApi = mockApi;
   globalThis.__reportsGovernanceUseFullReport = mockUseFullReport;
   localStorage.clear();
@@ -165,6 +166,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 test('shows all five locations and a review control for every section', async () => {

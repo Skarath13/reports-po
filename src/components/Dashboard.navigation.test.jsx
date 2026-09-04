@@ -47,6 +47,7 @@ vi.mock('../hooks/useReports', () => ({
 }));
 
 beforeEach(() => {
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ top: 100, left: 50, bottom: 150, right: 250, width: 200, height: 50 });
   localStorage.clear();
   vi.clearAllMocks();
   fixture.loading = false;
@@ -410,7 +411,7 @@ test('restores layout, sorting, filters, visibility, section, date and theme onl
   expect(document.documentElement.dataset.theme).toBe('light');
 });
 
-test('sidebar update dots persist across a reload and opening a section does not submit a review', async () => {
+test('sidebar updates persist across navigation and reload until their removal notice is acknowledged', async () => {
   const first = mount();
   await screen.findByRole('button', { name: 'Sign off Calendar List View' });
   expect(
@@ -445,7 +446,9 @@ test('sidebar update dots persist across a reload and opening a section does not
   ).toBeVisible();
   expect(
     screen.queryByRole('img', { name: 'Updates in Schedule' }),
-  ).not.toBeInTheDocument();
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Dismiss removed items notice for Calendar List View' }));
+  expect(screen.queryByRole('img', { name: 'Updates in Schedule' })).not.toBeInTheDocument();
   expect(fixture.api.submitSectionSignoff).not.toHaveBeenCalled();
   expect(fixture.api.acknowledgeSectionEntry).not.toHaveBeenCalled();
 });
@@ -484,4 +487,35 @@ test('keeps the schedule and draft search in place during refresh while disablin
   expect(
     screen.getByRole('textbox', { name: 'Search schedule' }),
   ).toHaveValue('Natural');
+});
+
+test('opening updated sections and filtered views preserves unread rows until each visible item is used', async () => {
+  const page = mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  const original = fixture.report._governance.sectionSnapshots.calendar;
+  fixture.report = {
+    ...fixture.report,
+    _governance: { sectionSnapshots: {
+      ...fixture.report._governance.sectionSnapshots,
+      calendar: { ...original, snapshotHash: 'two-updates', entries: original.entries.map(entry => ({ ...entry, contentVersion: 'v2' })) },
+    } },
+  };
+  page.rerender(<Dashboard user={{ id: 'viewer', username: 'Viewer' }} onLogout={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: /1 section updated/ }));
+  expect(screen.getByText('2 updates to review')).toBeVisible();
+  const rows = screen.getAllByLabelText('New since your review').map(cue => cue.closest('.appointment-row'));
+  rows[1].getBoundingClientRect = () => ({ top: 1200, bottom: 1300, left: 50, right: 250, width: 200, height: 100 });
+  fireEvent.click(rows[1]);
+  expect(screen.getByText('2 updates to review')).toBeVisible();
+  fireEvent.click(rows[0]);
+  expect(screen.getByText('1 update to review')).toBeVisible();
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search schedule' }), { target: { value: 'No matching client' } });
+  expect(screen.getByText('No matching appointments')).toBeVisible();
+  expect(screen.getByRole('img', { name: 'Updates in Schedule' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+  const remaining = screen.getByLabelText('New since your review').closest('.appointment-row');
+  fireEvent.click(remaining);
+  expect(screen.queryByRole('img', { name: 'Updates in Schedule' })).not.toBeInTheDocument();
+  expect(fixture.api.acknowledgeSectionEntry).not.toHaveBeenCalled();
+  expect(fixture.api.submitSectionSignoff).not.toHaveBeenCalled();
 });

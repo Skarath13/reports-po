@@ -330,10 +330,29 @@
   color: var(--muted-foreground);
   margin: 0;
 }
-.time-zone {
-  padding-left: 10px;
-  margin-left: 10px;
-  border-left: 1px solid var(--border-strong);
+.workspace-date-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+}
+.pacific-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.pacific-clock time {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  min-width: 6.4em;
+}
+.pacific-clock-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--primary);
 }
 .date-toggle {
   display: flex;
@@ -548,8 +567,8 @@
   max-width: 260px;
 }
 .section-update-count {
-  color: var(--attention);
-  background: var(--attention-background);
+  color: #93c5fd;
+  background: #60a5fa24;
   border-radius: 5px;
 }
 .section-update-count.seen {
@@ -677,7 +696,7 @@
   white-space: normal;
 }
 .appointment-row:hover {
-  background: var(--surface-hover) !important;
+  background-color: var(--surface-hover) !important;
 }
 .apt-time {
   position: relative;
@@ -942,23 +961,81 @@
   font-size: 0.875rem;
   color: var(--muted-foreground);
 }
-.review-update-cue {
-  box-shadow: inset 3px 0 0 var(--attention);
+.report-dashboard .review-update-cue {
+  box-shadow: inset 3px 0 0 #60a5fa;
+  background-image: linear-gradient(#60a5fa20, #60a5fa20);
 }
-.review-update-dot {
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--attention);
-  margin-right: 6px;
+.review-update-label {
+  display: inline-flex;
+  align-items: center;
+  color: #93c5fd;
+  background: #60a5fa24;
+  border: 1px solid #60a5fa40;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.4;
+  padding: 1px 5px;
+  width: fit-content;
+  white-space: nowrap;
 }
-.report-card > .review-update-dot,
-.staff-chip > .review-update-dot {
-  position: absolute;
-  top: 12px;
-  left: 5px;
-  margin: 0;
+.report-card > .review-update-label,
+.staff-chip > .review-update-label {
+  margin-bottom: 8px;
+}
+.apt-time:has(.review-update-label) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.schedule-table .apt-time:has(.review-update-label) {
+  display: table-cell;
+}
+.schedule-table .apt-time > .review-update-label {
+  display: flex;
+  margin-bottom: 4px;
+}
+.section-update-notice {
+  flex: 1 0 100%;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  padding: 10px 12px;
+  border: 1px solid #60a5fa40;
+  border-radius: 6px;
+  background: #60a5fa12;
+  color: #93c5fd;
+  font-size: 0.875rem;
+}
+.section-update-notice strong {
+  font-weight: 600;
+}
+.update-notice-copy {
+  flex: 1 1 230px;
+}
+.update-notice-hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted-foreground);
+}
+.removed-update-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-update-notice button {
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid #60a5fa50;
+  border-radius: 5px;
+}
+[data-theme='light'] .review-update-label,
+[data-theme='light'] .section-update-count:not(.seen),
+[data-theme='light'] .section-update-notice {
+  color: #1d4ed8;
 }
 .report-footer,
 .footer-stats,
@@ -1381,9 +1458,6 @@
   }
   .metric-card {
     padding: 14px;
-  }
-  .time-zone {
-    display: none;
   }
 }
 @media (max-width: 639px) {

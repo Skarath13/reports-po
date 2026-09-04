@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import BrandLogo from './BrandLogo';
+import PacificClock from './PacificClock';
 import {
   Sheet,
   SheetContent,
@@ -105,7 +106,7 @@ export default function DashboardShell({
                   className="nav-update-dot"
                   role="img"
                   aria-label={`Updates in ${label}`}
-                  title="Updated since you last opened this section"
+                  title="Items you have not yet reviewed"
                 />
               )}
               {sectionStates[key]?.ready &&
@@ -299,9 +300,9 @@ export default function DashboardShell({
                 : navigation.find((item) => item.key === activeSection)
                     ?.label}
             </h1>
-            <p>
-              {dateLabel}
-              <span className="time-zone">Pacific time</span>
+            <p className="workspace-date-line">
+              <span>{dateLabel}</span>
+              <PacificClock />
             </p>
           </div>
           <div className="date-toggle" aria-label="Report date">

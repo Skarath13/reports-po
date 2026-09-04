@@ -50,10 +50,11 @@ function ReportCard({
   isCrossLocation,
   className,
   isUpdated = false,
+  reviewEntry,
   onUpdateSeen,
   children
 }) {
-  const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen);
+  const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen, reviewEntry);
   const cardClassName = [
     'report-card',
     variant,
@@ -72,7 +73,7 @@ function ReportCard({
       {...updateHandlers}
     >
       {isUpdated && (
-        <span className="review-update-dot" aria-label="New since your review" />
+        <span className="review-update-label" aria-label="New since your review">New</span>
       )}
       {/* Cross-location indicator */}
       {isCrossLocation && <span className="cross-icon">🌐</span>}

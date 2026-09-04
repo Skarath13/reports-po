@@ -205,13 +205,17 @@ api.getFullReport = async (date, locationId) => {
     throw new Error('Synthetic report request failed.');
   const report = makeReport(date, locationId);
   if (scenario === 'updates' && previewChanged) {
-    const appointment = report.rankedByLikelihood[0];
-    if (appointment) {
-      appointment.customerNote =
+    for (const index of [0, 7, 11]) {
+      const appointment = report.rankedByLikelihood[index];
+      if (!appointment) continue;
+      appointment.serviceName = 'Natural Set with a style consultation';
+      if (index !== 11) appointment.customerNote =
         'Updated request after refresh: please allow time for a style consultation.';
       for (const section of ['calendar', 'notes']) {
-        report._governance.sectionSnapshots[section].snapshotHash +=
-          '-updated';
+        const snapshot = report._governance.sectionSnapshots[section];
+        snapshot.snapshotHash = `fixture-${section}-updated`;
+        const entry = snapshot.entries.find((item) => item.sourceKey === appointment.id);
+        if (entry) entry.contentVersion = 'fixture-v2';
       }
     }
   }

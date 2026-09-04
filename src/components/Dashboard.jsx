@@ -491,25 +491,15 @@ function DashboardWorkspace({ user, onLogout }) {
     [duplicateSnapshot, error, loading, report],
   );
 
-  const { unreadSections, markSeen } = useReportUpdates({
-    userKey: dashboardUserKey(user),
-    date: selectedDate,
-    locationId: selectedLocation,
-    snapshots: {
-      ...(!loading && !error ? report?._governance?.sectionSnapshots : {}),
-      duplicates: duplicateSnapshot,
-    },
-  });
-
   const refreshReviewSources = useCallback(() => {
     refresh();
     refreshAllLocationAppointments();
   }, [refresh, refreshAllLocationAppointments]);
 
   const {
-    sectionStates,
+    sectionStates: reviewStates,
     signOffSection,
-    acknowledgeEntry,
+    acknowledgeEntry: acknowledgeReviewedEntry,
     loading: sectionReviewsLoading,
     loadError: sectionReviewsError,
   } = useSectionReviews({
@@ -520,6 +510,22 @@ function DashboardWorkspace({ user, onLogout }) {
     enabled: Boolean(report && location && user),
     onStale: refreshReviewSources,
   });
+
+  const { unreadSections, sectionStates, markEntrySeen, markRemovedSeen } =
+    useReportUpdates({
+      userKey: dashboardUserKey(user),
+      date: selectedDate,
+      locationId: selectedLocation,
+      snapshots: sectionSnapshots,
+      reviewStates,
+      isToday,
+    });
+  const acknowledgeEntry = (section, entry) => {
+    markEntrySeen(section, entry);
+    if (isToday && reviewStates[section]?.unseenEntries.has(entry?.entryKey)) {
+      acknowledgeReviewedEntry(section, entry);
+    }
+  };
 
   const reviewStatus =
     sectionReviewsError || allLocationError || error
@@ -600,7 +606,6 @@ function DashboardWorkspace({ user, onLogout }) {
       activeSection={activeSection}
       onSectionChange={(section) => {
         updatePreferences({ activeSection: section });
-        markSeen(section);
         setShowAudit(false);
       }}
       theme={preferences.theme}
@@ -708,6 +713,7 @@ function DashboardWorkspace({ user, onLogout }) {
               statusLoading={sectionReviewsLoading}
               statusError={sectionReviewsError}
               onSignOff={() => signOffSection('calendar')}
+              onRemovedSeen={() => markRemovedSeen('calendar')}
               formatDateTime={formatPacificDateTime}
             >
               <div className="section-actions">
@@ -787,6 +793,7 @@ function DashboardWorkspace({ user, onLogout }) {
                       likelihoodMap={likelihoodMap}
                       asTableRow
                       onOpenDetails={openDetails}
+                      reviewEntry={entry}
                       isUpdated={Boolean(
                         entry &&
                           sectionStates.calendar?.unseenEntries.has(
@@ -847,6 +854,7 @@ function DashboardWorkspace({ user, onLogout }) {
               statusLoading={sectionReviewsLoading}
               statusError={sectionReviewsError}
               onSignOff={() => signOffSection('notes')}
+              onRemovedSeen={() => markRemovedSeen('notes')}
               formatDateTime={formatPacificDateTime}
             />
             {appointmentsWithNotes.length > 0 ? (
@@ -869,6 +877,7 @@ function DashboardWorkspace({ user, onLogout }) {
                       service={abbreviateService(appointment.serviceName)}
                       days={appointment.daysSinceLastAppointment}
                       technician={cleanTechName(appointment.technicianName)}
+                      reviewEntry={entry}
                       isUpdated={isUpdated}
                       onUpdateSeen={() => acknowledgeEntry('notes', entry)}
                     >
@@ -901,6 +910,7 @@ function DashboardWorkspace({ user, onLogout }) {
               statusLoading={sectionReviewsLoading}
               statusError={sectionReviewsError}
               onSignOff={() => signOffSection('potential-fixes')}
+              onRemovedSeen={() => markRemovedSeen('potential-fixes')}
               formatDateTime={formatPacificDateTime}
             />
             {potentialFixes.length > 0 ? (
@@ -919,6 +929,7 @@ function DashboardWorkspace({ user, onLogout }) {
                       service={abbreviateService(appointment.serviceName)}
                       days={appointment.daysSinceLastAppointment}
                       technician={cleanTechName(appointment.technicianName)}
+                      reviewEntry={entry}
                       isUpdated={Boolean(
                         entry &&
                           sectionStates['potential-fixes']?.unseenEntries.has(
@@ -951,6 +962,7 @@ function DashboardWorkspace({ user, onLogout }) {
               statusLoading={sectionReviewsLoading}
               statusError={sectionReviewsError || allLocationError}
               onSignOff={() => signOffSection('duplicates')}
+              onRemovedSeen={() => markRemovedSeen('duplicates')}
               formatDateTime={formatPacificDateTime}
             />
             {allLocationError ? (
@@ -992,6 +1004,7 @@ function DashboardWorkspace({ user, onLogout }) {
                       technician={cleanTechName(
                         duplicate.appointments[0]?.technicianName,
                       )}
+                      reviewEntry={entry}
                       isUpdated={Boolean(
                         entry &&
                           sectionStates.duplicates?.unseenEntries.has(
@@ -1051,6 +1064,7 @@ function DashboardWorkspace({ user, onLogout }) {
               statusLoading={sectionReviewsLoading}
               statusError={sectionReviewsError}
               onSignOff={() => signOffSection('anyone-available')}
+              onRemovedSeen={() => markRemovedSeen('anyone-available')}
               formatDateTime={formatPacificDateTime}
             />
             {report.anyoneAvailable?.length > 0 ? (
@@ -1070,6 +1084,7 @@ function DashboardWorkspace({ user, onLogout }) {
                       days={appointment.daysSinceLastAppointment}
                       technician={cleanTechName(appointment.technicianName)}
                       technicianLabel="Assigned"
+                      reviewEntry={entry}
                       isUpdated={Boolean(
                         entry &&
                           sectionStates[
@@ -1102,6 +1117,7 @@ function DashboardWorkspace({ user, onLogout }) {
               statusLoading={sectionReviewsLoading}
               statusError={sectionReviewsError}
               onSignOff={() => signOffSection('staff-first-hour')}
+              onRemovedSeen={() => markRemovedSeen('staff-first-hour')}
               formatDateTime={formatPacificDateTime}
             />
             {staffMissingFirstHour.length > 0 ? (
@@ -1115,6 +1131,7 @@ function DashboardWorkspace({ user, onLogout }) {
                     <StaffReviewChip
                       key={staff.technicianKey}
                       staff={staff}
+                      reviewEntry={entry}
                       isUpdated={Boolean(
                         entry &&
                           sectionStates[
@@ -1355,6 +1372,7 @@ function TechnicianColumn({
               hideNames={hideNames}
               showPrices={showPrices}
               likelihoodMap={likelihoodMap}
+              reviewEntry={entry}
               isUpdated={Boolean(
                 entry && reviewState?.unseenEntries.has(entry.entryKey),
               )}
@@ -1462,6 +1480,7 @@ function AppointmentRow({
   showPrices,
   likelihoodMap,
   isUpdated = false,
+  reviewEntry,
   onUpdateSeen,
   asTableRow = false,
   onOpenDetails,
@@ -1474,7 +1493,7 @@ function AppointmentRow({
     ? getReportAppointmentPriceBadge(appointment)
     : null;
   const appointmentTime = formatTime(appointment.appointmentTime);
-  const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen);
+  const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen, reviewEntry);
 
   // Get likelihood data from map (using appointment.id) or from appointment directly
   const likelihoodData = likelihoodMap?.[appointment.id];
@@ -1499,7 +1518,7 @@ function AppointmentRow({
 
   const copyAppointment = async (event) => {
     event.stopPropagation();
-    if (isUpdated) onUpdateSeen?.();
+    updateHandlers.onClick();
     if (copyResetRef.current) clearTimeout(copyResetRef.current);
 
     try {
@@ -1541,9 +1560,9 @@ function AppointmentRow({
       <Cell className="apt-time">
         {isUpdated && (
           <span
-            className="review-update-dot"
+            className="review-update-label"
             aria-label="New since your review"
-          />
+          >New</span>
         )}
         {appointmentTime}
       </Cell>
@@ -1613,7 +1632,7 @@ function AppointmentRow({
               aria-label={`View ${appointmentTime} appointment details`}
               onClick={(event) => {
                 event.stopPropagation();
-                if (isUpdated) onUpdateSeen?.();
+                updateHandlers.onClick();
                 onOpenDetails(appointment, event);
               }}
             >
@@ -1626,8 +1645,8 @@ function AppointmentRow({
   );
 }
 
-function StaffReviewChip({ staff, isUpdated, onUpdateSeen }) {
-  const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen);
+function StaffReviewChip({ staff, isUpdated, reviewEntry, onUpdateSeen }) {
+  const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen, reviewEntry);
   return (
     <div
       className={`staff-chip ${isUpdated ? 'review-update-cue' : ''}`}
@@ -1636,9 +1655,9 @@ function StaffReviewChip({ staff, isUpdated, onUpdateSeen }) {
     >
       {isUpdated && (
         <span
-          className="review-update-dot"
+          className="review-update-label"
           aria-label="New since your review"
-        />
+        >New</span>
       )}
       <span className="staff-name">{staff.technician}</span>
       <span className="first-apt">
