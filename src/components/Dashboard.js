@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFullReport, useAllLocationAppointments, LOCATIONS } from '../hooks/useReports';
+import { useSectionReviews } from '../hooks/useSectionReviews';
+import { useUpdateAcknowledgement } from '../hooks/useUpdateAcknowledgement';
 import api from '../api/client';
-import { Copy, Check, Eye, EyeOff, StickyNote, Wrench, AlertTriangle, Sun, Users, Activity, DollarSign, ClipboardCheck, ShieldCheck } from 'lucide-react';
+import { Copy, Check, Eye, EyeOff, StickyNote, Wrench, AlertTriangle, Sun, Users, Activity, DollarSign, ShieldCheck } from 'lucide-react';
 import { ReportCard } from './ReportCard';
 import ReportNoteContent from './ReportNoteContent';
 import AppointmentNoteHistory from './AppointmentNoteHistory';
 import ReportAuditPanel from './ReportAuditPanel';
+import ReviewableSectionHeader, { SectionEmptyState } from './ReviewableSectionHeader';
 import { appendPriceToScheduleLine, getReportAppointmentPriceBadge } from '../utils/reportPricing';
 import './Dashboard.css';
 
@@ -196,6 +199,7 @@ function formatPacificDateTime(isoString) {
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    second: '2-digit',
     timeZone: 'America/Los_Angeles',
     timeZoneName: 'short',
   });
@@ -271,6 +275,25 @@ function findPotentialFixes(appointments) {
   });
 }
 
+function getAppointmentSnapshotEntry(snapshot, appointmentId) {
+  const sourceKey = String(appointmentId || '');
+  return snapshot?.entries?.find((entry) => entry.sourceKey === sourceKey) || null;
+}
+
+function getDuplicateSnapshotEntry(snapshot, appointments) {
+  const appointmentIds = (appointments || [])
+    .map((appointment) => String(appointment?.id || ''))
+    .filter(Boolean)
+    .sort();
+  return snapshot?.entries?.find((entry) => (
+    JSON.stringify(entry.sourceAppointmentIds || []) === JSON.stringify(appointmentIds)
+  )) || null;
+}
+
+function getStaffSnapshotEntry(snapshot, technicianName) {
+  return snapshot?.entries?.find((entry) => entry.technicianName === technicianName) || null;
+}
+
 function Dashboard({ user, onLogout }) {
   // Get saved location from localStorage (per user)
   const getStoredLocation = () => {
@@ -318,9 +341,6 @@ function Dashboard({ user, onLogout }) {
   const [selectedDate, setSelectedDate] = useState(getTodayPST());
   const [hideNames, setHideNames] = useState(getStoredHideNames);
   const [showPrices, setShowPrices] = useState(getStoredShowPrices);
-  const [mySignoff, setMySignoff] = useState(null);
-  const [signoffLoading, setSignoffLoading] = useState(false);
-  const [signoffError, setSignoffError] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const prevLocationRef = useRef(selectedLocation);
@@ -365,53 +385,104 @@ function Dashboard({ user, onLogout }) {
   );
 
   // Fetch all-location appointments for cross-location duplicate detection
-  const { data: allLocationData } = useAllLocationAppointments(selectedDate);
+  const {
+    data: allLocationData,
+    loading: allLocationLoading,
+    error: allLocationError,
+    refresh: refreshAllLocationAppointments,
+  } = useAllLocationAppointments(selectedDate);
 
   // Keep the visibility hint aligned with the Worker's authoritative,
   // stable-ID audit authorization. Usernames are mutable display values.
   const canViewGovernanceAudit = user?.id === KATELYN_AUDIT_VIEWER_ID;
 
-  useEffect(() => {
-    let cancelled = false;
+  const appointmentsWithNotes = useMemo(() => (
+    (report?.rankedByLikelihood || []).filter((appointment) => (
+      appointment.customerProfileNote ||
+      appointment.customerNote ||
+      appointment.sellerNote ||
+      appointment.appointmentNoteHistoryNoteCount > 0
+    )).sort((left, right) => (
+      new Date(left.appointmentTime) - new Date(right.appointmentTime)
+    ))
+  ), [report]);
 
-    if (!location || !user) {
-      setMySignoff(null);
-      return undefined;
-    }
+  const potentialFixes = useMemo(
+    () => findPotentialFixes(report?.rankedByLikelihood || []),
+    [report]
+  );
 
-    setMySignoff(null);
-    setSignoffLoading(true);
-    setSignoffError(null);
-    api.getMySignoff(selectedDate, location.id)
-      .then((data) => {
-        if (!cancelled) setMySignoff(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setSignoffError(err.message);
-      })
-      .finally(() => {
-        if (!cancelled) setSignoffLoading(false);
-      });
+  const duplicateClients = useMemo(() => {
+    if (!location || allLocationData?.date !== selectedDate) return [];
+    return findDuplicateClients(allLocationData?.appointments || []).filter((duplicate) => (
+      duplicate.appointments.some((appointment) => (
+        appointment.locationName === location.name ||
+        appointment.locationId === location.squareId
+      ))
+    ));
+  }, [allLocationData, location, selectedDate]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [location, selectedDate, user]);
+  const staffMissingFirstHour = useMemo(() => (
+    report?.technicians?.filter((technician) => {
+      const technicianAppointments = report.byTechnician[technician] || [];
+      const hasFirstHour = technicianAppointments.some((appointment) => (
+        getHourPST(appointment.appointmentTime) === 9
+      ));
+      return !hasFirstHour && technicianAppointments.length > 0;
+    }).map((technician) => {
+      const technicianAppointments = report.byTechnician[technician] || [];
+      const firstAppointment = [...technicianAppointments].sort((left, right) => (
+        new Date(left?.appointmentTime || 0) - new Date(right?.appointmentTime || 0)
+      ))[0];
+      return {
+        technicianKey: technician,
+        technician: cleanTechName(technician),
+        firstAppointmentTime: firstAppointment?.appointmentTime,
+      };
+    }) || []
+  ), [report]);
 
-  const handleSignoff = async () => {
-    if (!location || !isToday || signoffLoading || mySignoff?.signedOff) return;
+  const likelihoodMap = useMemo(() => Object.fromEntries(
+    (report?.rankedByLikelihood || [])
+      .filter((appointment) => appointment.id)
+      .map((appointment) => [appointment.id, {
+        score: appointment.futureIssueLikelihood || 0,
+        components: appointment.riskScoreComponents || null,
+        reason: appointment.riskScoreReason || null,
+      }])
+  ), [report]);
 
-    setSignoffLoading(true);
-    setSignoffError(null);
-    try {
-      const data = await api.submitSignoff(selectedDate, location.id);
-      setMySignoff(data);
-    } catch (err) {
-      setSignoffError(err.message);
-    } finally {
-      setSignoffLoading(false);
-    }
-  };
+  const duplicateSnapshot = (
+    !allLocationLoading &&
+    !allLocationError &&
+    allLocationData?.date === selectedDate
+  )
+    ? allLocationData?._governance?.duplicateSnapshotsByLocation?.[location?.id] || null
+    : null;
+  const sectionSnapshots = useMemo(() => ({
+    ...(report?._governance?.sectionSnapshots || {}),
+    duplicates: duplicateSnapshot,
+  }), [duplicateSnapshot, report]);
+
+  const refreshReviewSources = useCallback(() => {
+    refresh();
+    refreshAllLocationAppointments();
+  }, [refresh, refreshAllLocationAppointments]);
+
+  const {
+    sectionStates,
+    signOffSection,
+    acknowledgeEntry,
+    loading: sectionReviewsLoading,
+    loadError: sectionReviewsError,
+  } = useSectionReviews({
+    date: selectedDate,
+    locationId: location?.id,
+    snapshots: sectionSnapshots,
+    isToday,
+    enabled: Boolean(report && location && user),
+    onStale: refreshReviewSources,
+  });
 
   // Track location changes for transition effect
   useEffect(() => {
@@ -459,9 +530,13 @@ function Dashboard({ user, onLogout }) {
           </div>
         </div>
         <div className="header-right">
-          <button className="refresh-btn" onClick={refresh} disabled={loading}>
+          <button
+            className="refresh-btn"
+            onClick={refreshReviewSources}
+            disabled={loading || allLocationLoading}
+          >
             <svg
-              className={`refresh-icon ${loading ? 'spinning' : ''}`}
+              className={`refresh-icon ${loading || allLocationLoading ? 'spinning' : ''}`}
               width="16"
               height="16"
               viewBox="0 0 24 24"
@@ -474,7 +549,7 @@ function Dashboard({ user, onLogout }) {
               <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
               <path d="M21 3v5h-5" />
             </svg>
-            {loading ? 'Refreshing' : 'Refresh'}
+            {loading || allLocationLoading ? 'Refreshing' : 'Refresh'}
           </button>
           {canViewGovernanceAudit && (
             <button className="audit-btn" onClick={() => setShowAudit(true)}>
@@ -521,277 +596,288 @@ function Dashboard({ user, onLogout }) {
       {/* Main Report Content */}
       {report && !showSkeleton && (
         <main className="report-content">
-          <section className="report-section signoff-section">
-            <div className="signoff-header">
-              <div>
-                <h2 className="section-title"><ClipboardCheck size={20} className="section-icon" /> Daily Review Checklist</h2>
-                <p className="signoff-description">
-                  Confirm that you reviewed the {location?.name} report for {formatDate(selectedDate)}.
-                </p>
+          <section className="report-section">
+            <ReviewableSectionHeader
+              title="Calendar List View"
+              state={sectionStates.calendar}
+              isToday={isToday}
+              statusLoading={sectionReviewsLoading}
+              statusError={sectionReviewsError}
+              onSignOff={() => signOffSection('calendar')}
+              formatDateTime={formatPacificDateTime}
+            >
+              <div className="section-actions">
+                <button
+                  className={`privacy-btn price-toggle ${showPrices ? 'active' : ''}`}
+                  onClick={() => setShowPrices(!showPrices)}
+                >
+                  <DollarSign size={18} />
+                  {showPrices ? 'Hide Prices' : 'Show Prices'}
+                </button>
+                <button
+                  className={`privacy-btn ${hideNames ? 'active' : ''}`}
+                  onClick={() => setHideNames(!hideNames)}
+                >
+                  {hideNames ? <><EyeOff size={18} /> Show Names</> : <><Eye size={18} /> Hide Names</>}
+                </button>
               </div>
-              <div className={`signoff-status ${mySignoff?.signedOff ? 'complete' : ''}`}>
-                {mySignoff?.signedOff ? <Check size={18} /> : <span className="signoff-empty-dot" />}
-                {mySignoff?.signedOff ? 'Reviewed' : 'Not yet reviewed'}
+            </ReviewableSectionHeader>
+            {report.totalAppointments > 0 ? (
+              <div className="calendar-grid-2col">
+                {report.technicians?.map((technician) => (
+                  <TechnicianColumn
+                    key={technician}
+                    name={cleanTechName(technician)}
+                    appointments={report.byTechnician[technician] || []}
+                    hideNames={hideNames}
+                    showPrices={showPrices}
+                    likelihoodMap={likelihoodMap}
+                    snapshot={sectionSnapshots.calendar}
+                    reviewState={sectionStates.calendar}
+                    onUpdateSeen={(entry) => acknowledgeEntry('calendar', entry)}
+                  />
+                ))}
               </div>
-            </div>
-            <div className="signoff-body">
-              <label className={`signoff-control ${mySignoff?.signedOff ? 'complete' : ''} ${!isToday ? 'disabled' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={Boolean(mySignoff?.signedOff)}
-                  onChange={handleSignoff}
-                  disabled={!isToday || signoffLoading || Boolean(mySignoff?.signedOff)}
-                  aria-label={`Mark ${location?.name} report reviewed`}
-                />
-                <span className="custom-checkbox" aria-hidden="true">
-                  {mySignoff?.signedOff && <Check size={15} />}
-                </span>
-                <span>
-                  <strong>{mySignoff?.signedOff ? 'You marked this report reviewed.' : 'I reviewed this report.'}</strong>
-                  {mySignoff?.signedAtUtc && (
-                    <small>Recorded {formatPacificDateTime(mySignoff.signedAtUtc)}</small>
-                  )}
-                  {!isToday && <small>Sign-off opens on today’s Pacific report only.</small>}
-                </span>
-              </label>
-              {signoffLoading && <span className="signoff-saving">Saving…</span>}
-              {signoffError && <span className="signoff-error">{signoffError}</span>}
-            </div>
+            ) : (
+              <SectionEmptyState>No appointments scheduled.</SectionEmptyState>
+            )}
           </section>
 
-          {/* Section 1: Calendar List View - 2 columns max */}
-          {(() => {
-            // Create lookup map for likelihood data from rankedByLikelihood
-            // Includes score components for enhanced tooltip
-            const likelihoodMap = {};
-            (report.rankedByLikelihood || []).forEach(apt => {
-              if (apt.id) {
-                likelihoodMap[apt.id] = {
-                  score: apt.futureIssueLikelihood || 0,
-                  components: apt.riskScoreComponents || null,
-                  reason: apt.riskScoreReason || null
-                };
-              }
-            });
-
-            return (
-              <section className="report-section">
-                <div className="section-header">
-                  <h2 className="section-title">Calendar List View</h2>
-                  <div className="section-actions">
-                    <button
-                      className={`privacy-btn price-toggle ${showPrices ? 'active' : ''}`}
-                      onClick={() => setShowPrices(!showPrices)}
-                    >
-                      <DollarSign size={18} />
-                      {showPrices ? 'Hide Prices' : 'Show Prices'}
-                    </button>
-                    <button
-                      className={`privacy-btn ${hideNames ? 'active' : ''}`}
-                      onClick={() => setHideNames(!hideNames)}
-                    >
-                      {hideNames ? <><EyeOff size={18} /> Show Names</> : <><Eye size={18} /> Hide Names</>}
-                    </button>
-                  </div>
-                </div>
-                <div className="calendar-grid-2col">
-                  {report.technicians?.map(tech => (
-                    <TechnicianColumn
-                      key={tech}
-                      name={cleanTechName(tech)}
-                      appointments={report.byTechnician[tech] || []}
-                      hideNames={hideNames}
-                      showPrices={showPrices}
-                      likelihoodMap={likelihoodMap}
-                    />
-                  ))}
-                </div>
-              </section>
-            );
-          })()}
-
-          {/* Section 2: Client and Appointment Notes - Sticky Note Grid */}
-          {(() => {
-            const appointmentsWithNotes = (report.rankedByLikelihood?.filter(
-              apt => (
-                apt.customerProfileNote ||
-                apt.customerNote ||
-                apt.sellerNote ||
-                apt.appointmentNoteHistoryNoteCount > 0
-              )
-            ) || []).sort((a, b) =>
-              new Date(a.appointmentTime) - new Date(b.appointmentTime)
-            );
-            return appointmentsWithNotes.length > 0 && (
-              <section className="report-section notes-section">
-                <h2 className="section-title"><StickyNote size={20} className="section-icon" /> Client &amp; Appointment Notes</h2>
-                <div className="card-grid notes-card-grid">
-                  {appointmentsWithNotes.map((apt, i) => (
+          <section className="report-section notes-section">
+            <ReviewableSectionHeader
+              title="Client & Appointment Notes"
+              icon={<StickyNote size={20} className="section-icon" />}
+              state={sectionStates.notes}
+              isToday={isToday}
+              statusLoading={sectionReviewsLoading}
+              statusError={sectionReviewsError}
+              onSignOff={() => signOffSection('notes')}
+              formatDateTime={formatPacificDateTime}
+            />
+            {appointmentsWithNotes.length > 0 ? (
+              <div className="card-grid notes-card-grid">
+                {appointmentsWithNotes.map((appointment) => {
+                  const entry = getAppointmentSnapshotEntry(sectionSnapshots.notes, appointment.id);
+                  const isUpdated = Boolean(entry && sectionStates.notes?.unseenEntries.has(entry.entryKey));
+                  return (
                     <ReportCard
-                      key={`${selectedDate}-${location?.squareId || ''}-${apt.id || i}`}
+                      key={appointment.id}
                       variant="note"
-                      time={formatTime(apt.appointmentTime)}
-                      customer={titleCase(apt.customerName)}
-                      service={abbreviateService(apt.serviceName)}
-                      days={apt.daysSinceLastAppointment}
-                      technician={cleanTechName(apt.technicianName)}
+                      time={formatTime(appointment.appointmentTime)}
+                      customer={titleCase(appointment.customerName)}
+                      service={abbreviateService(appointment.serviceName)}
+                      days={appointment.daysSinceLastAppointment}
+                      technician={cleanTechName(appointment.technicianName)}
+                      isUpdated={isUpdated}
+                      onUpdateSeen={() => acknowledgeEntry('notes', entry)}
                     >
-                      {apt.customerProfileNote && (
-                        <ReportNoteContent profileNote={apt.customerProfileNote} />
+                      {appointment.customerProfileNote && (
+                        <ReportNoteContent profileNote={appointment.customerProfileNote} />
                       )}
                       <AppointmentNoteHistory
-                        currentCustomerNote={apt.customerNote}
-                        currentSellerNote={apt.sellerNote}
+                        currentCustomerNote={appointment.customerNote}
+                        currentSellerNote={appointment.sellerNote}
                         isToday={isToday}
-                        initialAppointments={apt.appointmentNoteHistory || []}
-                        total={apt.appointmentNoteHistoryTotal || 0}
-                        noteCount={apt.appointmentNoteHistoryNoteCount || 0}
-                        hasMore={apt.appointmentNoteHistoryHasMore}
-                        coveragePending={apt.appointmentNoteHistoryCoveragePending}
-                        coverageUnavailable={apt.appointmentNoteHistoryCoverageUnavailable}
-                        available={apt.appointmentNoteHistoryAvailable}
+                        initialAppointments={appointment.appointmentNoteHistory || []}
+                        total={appointment.appointmentNoteHistoryTotal || 0}
+                        noteCount={appointment.appointmentNoteHistoryNoteCount || 0}
+                        hasMore={appointment.appointmentNoteHistoryHasMore}
+                        coveragePending={appointment.appointmentNoteHistoryCoveragePending}
+                        coverageUnavailable={appointment.appointmentNoteHistoryCoverageUnavailable}
+                        available={appointment.appointmentNoteHistoryAvailable}
                         onLoadMore={(offset, limit) => api.getAppointmentNoteHistory(
                           selectedDate,
                           location.squareId,
-                          apt.id,
+                          appointment.id,
                           { offset, limit }
                         )}
                       />
                     </ReportCard>
-                  ))}
-                </div>
-              </section>
-            );
-          })()}
+                  );
+                })}
+              </div>
+            ) : (
+              <SectionEmptyState>No client or appointment notes.</SectionEmptyState>
+            )}
+          </section>
 
-          {/* Section 3: Potential Fixes - Customers who booked within 5 days */}
-          {(() => {
-            const potentialFixes = findPotentialFixes(report.rankedByLikelihood || []);
-            return potentialFixes.length > 0 && (
-              <section className="report-section fixes-section">
-                <h2 className="section-title">
-                  <Wrench size={20} className="section-icon" /> Potential Fixes
-                </h2>
-                <div className="card-grid">
-                  {potentialFixes.map((apt, i) => (
+          <section className="report-section fixes-section">
+            <ReviewableSectionHeader
+              title="Potential Fixes"
+              icon={<Wrench size={20} className="section-icon" />}
+              state={sectionStates['potential-fixes']}
+              isToday={isToday}
+              statusLoading={sectionReviewsLoading}
+              statusError={sectionReviewsError}
+              onSignOff={() => signOffSection('potential-fixes')}
+              formatDateTime={formatPacificDateTime}
+            />
+            {potentialFixes.length > 0 ? (
+              <div className="card-grid">
+                {potentialFixes.map((appointment) => {
+                  const entry = getAppointmentSnapshotEntry(
+                    sectionSnapshots['potential-fixes'],
+                    appointment.id
+                  );
+                  return (
                     <ReportCard
-                      key={i}
+                      key={appointment.id}
                       variant="fixes"
-                      time={formatTime(apt.appointmentTime)}
-                      customer={titleCase(apt.customerName)}
-                      service={abbreviateService(apt.serviceName)}
-                      days={apt.daysSinceLastAppointment}
-                      technician={cleanTechName(apt.technicianName)}
+                      time={formatTime(appointment.appointmentTime)}
+                      customer={titleCase(appointment.customerName)}
+                      service={abbreviateService(appointment.serviceName)}
+                      days={appointment.daysSinceLastAppointment}
+                      technician={cleanTechName(appointment.technicianName)}
+                      isUpdated={Boolean(
+                        entry && sectionStates['potential-fixes']?.unseenEntries.has(entry.entryKey)
+                      )}
+                      onUpdateSeen={() => acknowledgeEntry('potential-fixes', entry)}
                     />
-                  ))}
-                </div>
-              </section>
-            );
-          })()}
+                  );
+                })}
+              </div>
+            ) : (
+              <SectionEmptyState>No potential booking fixes.</SectionEmptyState>
+            )}
+          </section>
 
-          {/* Section 4: Duplicate Clients (Cross-Location Aware) */}
-          {(() => {
-            // Use all-location data for cross-location duplicate detection
-            const allDuplicates = findDuplicateClients(allLocationData?.appointments || []);
-            // Filter to only show duplicates that include the current location
-            const duplicateClients = allDuplicates.filter(dup =>
-              dup.appointments.some(apt =>
-                apt.locationName === location?.name ||
-                apt.locationId === location?.squareId
-              )
-            );
-            return duplicateClients.length > 0 && (
-              <section className="report-section duplicates-section">
-                <h2 className="section-title"><AlertTriangle size={20} className="section-icon" /> Duplicate Clients Today</h2>
-                <div className="card-grid">
-                  {duplicateClients.map((dup, i) => (
+          <section className="report-section duplicates-section">
+            <ReviewableSectionHeader
+              title="Duplicate Clients Today"
+              icon={<AlertTriangle size={20} className="section-icon" />}
+              state={sectionStates.duplicates}
+              isToday={isToday}
+              statusLoading={sectionReviewsLoading}
+              statusError={sectionReviewsError || allLocationError}
+              onSignOff={() => signOffSection('duplicates')}
+              formatDateTime={formatPacificDateTime}
+            />
+            {allLocationError ? (
+              <SectionEmptyState>Cross-location duplicate check is unavailable. Refresh to retry.</SectionEmptyState>
+            ) : allLocationLoading || !allLocationData || allLocationData.date !== selectedDate ? (
+              <SectionEmptyState>Checking all locations…</SectionEmptyState>
+            ) : duplicateClients.length > 0 ? (
+              <div className="card-grid">
+                {duplicateClients.map((duplicate) => {
+                  const entry = getDuplicateSnapshotEntry(
+                    sectionSnapshots.duplicates,
+                    duplicate.appointments
+                  );
+                  const duplicateKey = duplicate.appointments
+                    .map((appointment) => appointment.id)
+                    .filter(Boolean)
+                    .sort()
+                    .join(':');
+                  return (
                     <ReportCard
-                      key={i}
+                      key={duplicateKey}
                       variant="duplicates"
-                      isCrossLocation={dup.isCrossLocation}
-                      time={formatTime(dup.appointments[0]?.appointmentTime)}
-                      customer={titleCase(dup.customer)}
-                      service={abbreviateService(dup.appointments[0]?.serviceName)}
-                      days={dup.appointments[0]?.daysSinceLastAppointment}
-                      technician={cleanTechName(dup.appointments[0]?.technicianName)}
+                      isCrossLocation={duplicate.isCrossLocation}
+                      time={formatTime(duplicate.appointments[0]?.appointmentTime)}
+                      customer={titleCase(duplicate.customer)}
+                      service={abbreviateService(duplicate.appointments[0]?.serviceName)}
+                      days={duplicate.appointments[0]?.daysSinceLastAppointment}
+                      technician={cleanTechName(duplicate.appointments[0]?.technicianName)}
+                      isUpdated={Boolean(entry && sectionStates.duplicates?.unseenEntries.has(entry.entryKey))}
+                      onUpdateSeen={() => acknowledgeEntry('duplicates', entry)}
                     >
-                      {/* Extra: All appointments listed */}
                       <div className="dup-summary">
-                        {dup.appointments.length} appts @ {dup.locations.length > 1 ? `${dup.locations.length} locations` : dup.locations[0]}
+                        {duplicate.appointments.length} appts @ {duplicate.locations.length > 1 ? `${duplicate.locations.length} locations` : duplicate.locations[0]}
                       </div>
                       <div className="dup-appointments">
-                        {dup.appointments.map((apt, j) => (
-                          <div key={j} className="dup-appt-row">
-                            <span className="dup-appt-time">{formatTime(apt.appointmentTime)}</span>
-                            <span className="dup-appt-service">{abbreviateService(apt.serviceName)}</span>
-                            <span className="dup-appt-tech">{cleanTechName(apt.technicianName)}</span>
-                            {dup.isCrossLocation && <span className="dup-appt-loc">{apt.locationName || ''}</span>}
+                        {duplicate.appointments.map((appointment) => (
+                          <div key={appointment.id} className="dup-appt-row">
+                            <span className="dup-appt-time">{formatTime(appointment.appointmentTime)}</span>
+                            <span className="dup-appt-service">{abbreviateService(appointment.serviceName)}</span>
+                            <span className="dup-appt-tech">{cleanTechName(appointment.technicianName)}</span>
+                            {duplicate.isCrossLocation && <span className="dup-appt-loc">{appointment.locationName || ''}</span>}
                           </div>
                         ))}
                       </div>
                     </ReportCard>
-                  ))}
-                </div>
-              </section>
-            );
-          })()}
-
-          {/* Section 4: Anyone Available */}
-          {report.anyoneAvailable?.length > 0 && (
-            <section className="report-section anyone-section">
-              <h2 className="section-title"><Users size={20} className="section-icon" /> Clients Booked for Anyone Available</h2>
-              <div className="card-grid">
-                {report.anyoneAvailable.map((apt, i) => (
-                  <ReportCard
-                    key={i}
-                    variant="anyone"
-                    time={formatTime(apt.appointmentTime)}
-                    customer={titleCase(apt.customerName)}
-                    service={abbreviateService(apt.serviceName)}
-                    days={apt.daysSinceLastAppointment}
-                    technician={cleanTechName(apt.technicianName)}
-                    technicianLabel="Assigned"
-                  />
-                ))}
+                  );
+                })}
               </div>
-            </section>
-          )}
+            ) : (
+              <SectionEmptyState>No duplicate clients found.</SectionEmptyState>
+            )}
+          </section>
 
-          {/* Section 3: Staff Without First-Hour (calculated client-side for accurate PST) */}
-          {(() => {
-            // Recalculate staff without 9-10 AM in PST
-            const staffMissingFirstHour = report.technicians?.filter(tech => {
-              const techAppts = report.byTechnician[tech] || [];
-              const hasFirstHour = techAppts.some(apt => {
-                const hour = getHourPST(apt.appointmentTime);
-                return hour === 9; // 9 AM PST
-              });
-              return !hasFirstHour && techAppts.length > 0;
-            }).map(tech => {
-              const techAppts = report.byTechnician[tech] || [];
-              const firstAppt = techAppts[0];
-              return {
-                technician: cleanTechName(tech),
-                firstAppointmentTime: firstAppt?.appointmentTime
-              };
-            }) || [];
+          <section className="report-section anyone-section">
+            <ReviewableSectionHeader
+              title="Clients Booked for Anyone Available"
+              icon={<Users size={20} className="section-icon" />}
+              state={sectionStates['anyone-available']}
+              isToday={isToday}
+              statusLoading={sectionReviewsLoading}
+              statusError={sectionReviewsError}
+              onSignOff={() => signOffSection('anyone-available')}
+              formatDateTime={formatPacificDateTime}
+            />
+            {report.anyoneAvailable?.length > 0 ? (
+              <div className="card-grid">
+                {report.anyoneAvailable.map((appointment) => {
+                  const entry = getAppointmentSnapshotEntry(
+                    sectionSnapshots['anyone-available'],
+                    appointment.id
+                  );
+                  return (
+                    <ReportCard
+                      key={appointment.id}
+                      variant="anyone"
+                      time={formatTime(appointment.appointmentTime)}
+                      customer={titleCase(appointment.customerName)}
+                      service={abbreviateService(appointment.serviceName)}
+                      days={appointment.daysSinceLastAppointment}
+                      technician={cleanTechName(appointment.technicianName)}
+                      technicianLabel="Assigned"
+                      isUpdated={Boolean(
+                        entry && sectionStates['anyone-available']?.unseenEntries.has(entry.entryKey)
+                      )}
+                      onUpdateSeen={() => acknowledgeEntry('anyone-available', entry)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <SectionEmptyState>No clients booked for anyone available.</SectionEmptyState>
+            )}
+          </section>
 
-            return staffMissingFirstHour.length > 0 && (
-              <section className="report-section info-section">
-                <h2 className="section-title"><Sun size={20} className="section-icon" /> Staff Without a First-Hour (9-10 AM) Appointment</h2>
-                <div className="staff-chips">
-                  {staffMissingFirstHour.map((staff, i) => (
-                    <div key={i} className="staff-chip">
-                      <span className="staff-name">{staff.technician}</span>
-                      <span className="first-apt">
-                        First: {formatTime(staff.firstAppointmentTime)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            );
-          })()}
+          <section className="report-section info-section">
+            <ReviewableSectionHeader
+              title="Staff Without a First-Hour (9-10 AM) Appointment"
+              icon={<Sun size={20} className="section-icon" />}
+              state={sectionStates['staff-first-hour']}
+              isToday={isToday}
+              statusLoading={sectionReviewsLoading}
+              statusError={sectionReviewsError}
+              onSignOff={() => signOffSection('staff-first-hour')}
+              formatDateTime={formatPacificDateTime}
+            />
+            {staffMissingFirstHour.length > 0 ? (
+              <div className="staff-chips">
+                {staffMissingFirstHour.map((staff) => {
+                  const entry = getStaffSnapshotEntry(
+                    sectionSnapshots['staff-first-hour'],
+                    staff.technicianKey
+                  );
+                  return (
+                    <StaffReviewChip
+                      key={staff.technicianKey}
+                      staff={staff}
+                      isUpdated={Boolean(
+                        entry && sectionStates['staff-first-hour']?.unseenEntries.has(entry.entryKey)
+                      )}
+                      onUpdateSeen={() => acknowledgeEntry('staff-first-hour', entry)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <SectionEmptyState>Every scheduled staff member has a 9–10 AM appointment.</SectionEmptyState>
+            )}
+          </section>
 
           {/* Footer Stats */}
           <footer className="report-footer">
@@ -835,7 +921,16 @@ function formatAppointmentClipboardLine(appointment, hideNames, showPrices) {
   return appendPriceToScheduleLine(baseLine, appointment, showPrices);
 }
 
-function TechnicianColumn({ name, appointments, hideNames, showPrices, likelihoodMap }) {
+function TechnicianColumn({
+  name,
+  appointments,
+  hideNames,
+  showPrices,
+  likelihoodMap,
+  snapshot,
+  reviewState,
+  onUpdateSeen,
+}) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -866,15 +961,20 @@ function TechnicianColumn({ name, appointments, hideNames, showPrices, likelihoo
         </div>
       </div>
       <div className="tech-appointments">
-        {appointments.map((apt, i) => (
-          <AppointmentRow
-            key={i}
-            appointment={apt}
-            hideNames={hideNames}
-            showPrices={showPrices}
-            likelihoodMap={likelihoodMap}
-          />
-        ))}
+        {appointments.map((appointment) => {
+          const entry = getAppointmentSnapshotEntry(snapshot, appointment.id);
+          return (
+            <AppointmentRow
+              key={appointment.id}
+              appointment={appointment}
+              hideNames={hideNames}
+              showPrices={showPrices}
+              likelihoodMap={likelihoodMap}
+              isUpdated={Boolean(entry && reviewState?.unseenEntries.has(entry.entryKey))}
+              onUpdateSeen={() => onUpdateSeen(entry)}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -955,13 +1055,21 @@ function buildRiskTooltip(score, components, reason) {
 }
 
 // Single Appointment Row - Clean Excel-like styling
-function AppointmentRow({ appointment, hideNames, showPrices, likelihoodMap }) {
+function AppointmentRow({
+  appointment,
+  hideNames,
+  showPrices,
+  likelihoodMap,
+  isUpdated = false,
+  onUpdateSeen,
+}) {
   const [copyStatus, setCopyStatus] = useState('idle');
   const copyResetRef = useRef(null);
   const daysStyle = getDaysSinceStyle(appointment.daysSinceLastAppointment);
   const shortService = abbreviateService(appointment.serviceName);
   const priceBadge = showPrices ? getReportAppointmentPriceBadge(appointment) : null;
   const appointmentTime = formatTime(appointment.appointmentTime);
+  const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen);
 
   // Get likelihood data from map (using appointment.id) or from appointment directly
   const likelihoodData = likelihoodMap?.[appointment.id];
@@ -979,6 +1087,7 @@ function AppointmentRow({ appointment, hideNames, showPrices, likelihoodMap }) {
 
   const copyAppointment = async (event) => {
     event.stopPropagation();
+    if (isUpdated) onUpdateSeen?.();
     if (copyResetRef.current) clearTimeout(copyResetRef.current);
 
     try {
@@ -1004,9 +1113,12 @@ function AppointmentRow({ appointment, hideNames, showPrices, likelihoodMap }) {
 
   return (
     <div
-      className={`appointment-row ${hideNames ? 'hide-names' : ''}`}
+      className={`appointment-row ${hideNames ? 'hide-names' : ''} ${isUpdated ? 'review-update-cue' : ''}`}
       title={hideNames ? appointment.serviceName : `${titleCase(appointment.customerName)} - ${appointment.serviceName}`}
+      tabIndex={isUpdated ? 0 : undefined}
+      {...updateHandlers}
     >
+      {isUpdated && <span className="review-update-dot" aria-label="New since your review" />}
       <span className="apt-time">{appointmentTime}</span>
       {!hideNames && (
         <span className="apt-customer">
@@ -1048,6 +1160,21 @@ function AppointmentRow({ appointment, hideNames, showPrices, likelihoodMap }) {
       >
         {copyStatus === 'copied' ? <Check size={14} /> : <Copy size={14} />}
       </button>
+    </div>
+  );
+}
+
+function StaffReviewChip({ staff, isUpdated, onUpdateSeen }) {
+  const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen);
+  return (
+    <div
+      className={`staff-chip ${isUpdated ? 'review-update-cue' : ''}`}
+      tabIndex={isUpdated ? 0 : undefined}
+      {...updateHandlers}
+    >
+      {isUpdated && <span className="review-update-dot" aria-label="New since your review" />}
+      <span className="staff-name">{staff.technician}</span>
+      <span className="first-apt">First: {formatTime(staff.firstAppointmentTime)}</span>
     </div>
   );
 }

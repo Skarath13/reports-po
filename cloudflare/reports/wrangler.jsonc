@@ -43,11 +43,12 @@
     "EDGE_APP_NAME": "checkin-reports",
     "EDGE_ENVIRONMENT": "production",
     "KIOSK_RELEASE_POLICY_KV_KEY": "kiosk-release-policy:override",
-    // ORIGIN_ACCESS_CLIENT_ID and ORIGIN_ACCESS_CLIENT_SECRET are Worker secrets.
+    // Origin Access credentials and GOVERNANCE_FINGERPRINT_SECRET are Worker secrets.
     "ORIGIN_BASE_URL": "https://checkin-origin.elegantlashesbykatie.com"
   },
   "secrets": {
     "required": [
+      "GOVERNANCE_FINGERPRINT_SECRET",
       "ORIGIN_ACCESS_CLIENT_ID",
       "ORIGIN_ACCESS_CLIENT_SECRET"
     ]

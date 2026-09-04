@@ -33,6 +33,16 @@ Manual production deploy command:
 npx wrangler deploy --config cloudflare/reports/wrangler.jsonc
 ```
 
+Reports governance uses the dedicated D1 database `reports-governance` (`28efe201-bcfa-4e1e-8549-fa019e5d7998`). Apply its versioned schema before the first governance-enabled deploy:
+
+```bash
+npx wrangler d1 migrations apply reports-governance --remote --config cloudflare/reports/wrangler.jsonc
+```
+
+The database stores only governance policy and immutable login, first-view, and sign-off events. It does not store PINs, report contents, Supabase service credentials, or client data. The Worker verifies the existing report token through the origin before recording or returning governance data.
+
+The zone also has Cloudflare ruleset `2aaff556277146199a96b1cba9ecf16f` for `POST /api/reports/auth/login`, scoped to `reports.elegantlashesbykatie.com`, at 5 attempts per client IP per 10 seconds. The zone’s current plan only permits a 10-second period and 10-second mitigation timeout; the origin’s existing login throttling remains in place for longer-window protection.
+
 Last push-trigger verification: 2026-06-22 after explicit reports Wrangler config restore.
 
 Worker secrets should only be:

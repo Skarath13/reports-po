@@ -268,20 +268,23 @@ export function useAllLocationAppointments(date) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const requestIdRef = useRef(0);
 
   const fetchAppointments = useCallback(async () => {
     if (!date) return;
 
+    const currentRequestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
+    setData((current) => current?.date === date ? current : null);
 
     try {
       const result = await api.getAllLocationAppointments(date);
-      setData(result);
+      if (currentRequestId === requestIdRef.current) setData(result);
     } catch (err) {
-      setError(err.message);
+      if (currentRequestId === requestIdRef.current) setError(err.message);
     } finally {
-      setLoading(false);
+      if (currentRequestId === requestIdRef.current) setLoading(false);
     }
   }, [date]);
 

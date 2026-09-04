@@ -464,6 +464,7 @@ test('wrangler configs declare exact approved routes and protected origin secret
   const currentFile = fileURLToPath(import.meta.url);
   const repoRoot = path.resolve(path.dirname(currentFile), '../..');
   const requiredSecrets = [
+    'GOVERNANCE_FINGERPRINT_SECRET',
     'ORIGIN_ACCESS_CLIENT_ID',
     'ORIGIN_ACCESS_CLIENT_SECRET',
   ];

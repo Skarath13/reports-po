@@ -1,0 +1,383 @@
+<div id="elk-history-mockup">
+  <style>
+    #elk-history-mockup {
+      color-scheme: light dark;
+      color: light-dark(#1e293b, #f8fafc);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: var(--font-size-base);
+    }
+
+    #elk-history-mockup * {
+      box-sizing: border-box;
+    }
+
+    #elk-history-mockup [hidden] {
+      display: none !important;
+    }
+
+    #elk-history-mockup .elk-note-surface {
+      max-width: 680px;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid light-dark(#e5c84a, #675715);
+      border-radius: 10px;
+      background: light-dark(#fef9c3, #2a2410);
+      box-shadow: 0 3px 12px light-dark(rgba(15, 23, 42, 0.12), rgba(0, 0, 0, 0.3));
+    }
+
+    #elk-history-mockup .elk-note-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px 12px;
+      border-top: 4px solid light-dark(#eab308, #d9a80b);
+      border-bottom: 1px solid light-dark(rgba(113, 63, 18, 0.2), rgba(250, 204, 21, 0.2));
+    }
+
+    #elk-history-mockup h3,
+    #elk-history-mockup h4,
+    #elk-history-mockup p {
+      margin: 0;
+    }
+
+    #elk-history-mockup h3,
+    #elk-history-mockup h4 {
+      font-weight: 500;
+    }
+
+    #elk-history-mockup .elk-note-context,
+    #elk-history-mockup .elk-history-count,
+    #elk-history-mockup .elk-visit-meta,
+    #elk-history-mockup .elk-note-empty {
+      color: light-dark(#64748b, #cbd5e1);
+      font-size: calc(var(--font-size-base) * 0.82);
+    }
+
+    #elk-history-mockup .elk-note-context {
+      margin-top: 3px;
+    }
+
+    #elk-history-mockup .elk-current-notes {
+      display: grid;
+      gap: 8px;
+      padding: 12px 16px;
+    }
+
+    #elk-history-mockup .elk-current-row {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      align-items: start;
+      gap: 10px;
+    }
+
+    #elk-history-mockup .elk-current-profile {
+      padding: 9px;
+      border-radius: 7px;
+      background: light-dark(#eff6ff, #15233d);
+    }
+
+    #elk-history-mockup .elk-note-label,
+    #elk-history-mockup .elk-visit-note-kind {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border-radius: 999px;
+      background: light-dark(rgba(37, 99, 235, 0.12), rgba(96, 165, 250, 0.18));
+      color: light-dark(#1d4ed8, #bfdbfe);
+      font-size: calc(var(--font-size-base) * 0.7);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      padding: 3px 7px;
+      text-transform: uppercase;
+    }
+
+    #elk-history-mockup .elk-current-copy {
+      padding-top: 2px;
+    }
+
+    #elk-history-mockup .elk-history {
+      padding: 14px 16px 16px;
+      border-top: 1px dashed light-dark(#d4a90a, #7e6818);
+      background: light-dark(rgba(255, 255, 255, 0.34), rgba(0, 0, 0, 0.12));
+    }
+
+    #elk-history-mockup .elk-history-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    #elk-history-mockup .elk-visit-list {
+      position: relative;
+      display: grid;
+      gap: 2px;
+    }
+
+    #elk-history-mockup .elk-visit-list::before {
+      content: "";
+      position: absolute;
+      top: 20px;
+      bottom: 20px;
+      left: 9px;
+      width: 1px;
+      background: light-dark(#d6c86f, #776620);
+    }
+
+    #elk-history-mockup .elk-visit {
+      position: relative;
+      display: grid;
+      grid-template-columns: 20px 76px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 44px;
+      padding: 6px 8px 6px 0;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    #elk-history-mockup .elk-visit:hover,
+    #elk-history-mockup .elk-visit.is-selected {
+      background: light-dark(rgba(255, 255, 255, 0.72), rgba(250, 204, 21, 0.08));
+    }
+
+    #elk-history-mockup .elk-visit-dot {
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border: 2px solid light-dark(#a8a29e, #a8a29e);
+      border-radius: 50%;
+      background: light-dark(#fef9c3, #2a2410);
+      color: transparent;
+    }
+
+    #elk-history-mockup .elk-visit.has-note .elk-visit-dot {
+      border-color: light-dark(#2563eb, #93c5fd);
+      background: light-dark(#2563eb, #93c5fd);
+      color: light-dark(#ffffff, #172554);
+    }
+
+    #elk-history-mockup .elk-visit-date {
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    #elk-history-mockup .elk-visit-copy {
+      min-width: 0;
+    }
+
+    #elk-history-mockup .elk-visit-service {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #elk-history-mockup .elk-visit-meta {
+      display: block;
+    }
+
+    #elk-history-mockup .elk-visit-note-kind {
+      background: light-dark(rgba(124, 58, 237, 0.1), rgba(196, 181, 253, 0.14));
+      color: light-dark(#6d28d9, #ddd6fe);
+      white-space: nowrap;
+    }
+
+    #elk-history-mockup .elk-visit-no-note {
+      color: light-dark(#78716c, #d6d3d1);
+      font-size: calc(var(--font-size-base) * 0.76);
+      white-space: nowrap;
+    }
+
+    #elk-history-mockup .elk-visit-detail {
+      margin: 6px 0 10px 28px;
+      padding: 10px 12px;
+      border-left: 3px solid light-dark(#2563eb, #93c5fd);
+      background: light-dark(#eff6ff, #15233d);
+    }
+
+    #elk-history-mockup .elk-detail-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 5px;
+    }
+
+    #elk-history-mockup .elk-show-more {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 5px;
+      border: 0;
+      border-radius: 7px;
+      background: light-dark(rgba(113, 63, 18, 0.08), rgba(250, 204, 21, 0.1));
+      color: light-dark(#713f12, #fde68a);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    @media (max-width: 520px) {
+      #elk-history-mockup .elk-note-header,
+      #elk-history-mockup .elk-history-heading,
+      #elk-history-mockup .elk-detail-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      #elk-history-mockup .elk-current-row {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      #elk-history-mockup .elk-visit {
+        grid-template-columns: 20px 68px minmax(0, 1fr);
+      }
+
+      #elk-history-mockup .elk-visit-note-kind,
+      #elk-history-mockup .elk-visit-no-note {
+        grid-column: 3;
+        justify-self: start;
+      }
+    }
+  </style>
+
+  <section class="elk-note-surface" aria-label="Proposed client appointment-note history">
+    <header class="elk-note-header">
+      <div>
+        <h3>10:00 AM · Test Client</h3>
+        <p class="elk-note-context">Classic Fill · Technician · 21 days since last visit</p>
+      </div>
+    </header>
+
+    <div class="elk-current-notes">
+      <div class="elk-current-row elk-current-profile">
+        <span class="elk-note-label">Client profile</span>
+        <p>Prefers sensitive adhesive and a natural curl.</p>
+      </div>
+      <div class="elk-current-row">
+        <span class="elk-note-label">Today</span>
+        <p class="elk-note-empty">No appointment note recorded.</p>
+      </div>
+    </div>
+
+    <div class="elk-history">
+      <div class="elk-history-heading">
+        <h4>Appointment note trail</h4>
+        <span class="elk-history-count">3 notes across the last 5 appointments</span>
+      </div>
+
+      <div class="elk-visit-list" role="list" aria-label="Past appointments">
+        <button class="elk-visit has-note is-selected" type="button" role="listitem" aria-pressed="true" data-date="Aug 9, 2026" data-context="Classic Fill · Technician · Accepted" data-kind="Business note" data-note="Use the lighter curl selected at consultation.">
+          <span class="elk-visit-dot" aria-hidden="true">•</span>
+          <span class="elk-visit-date">Aug 9</span>
+          <span class="elk-visit-copy"><span class="elk-visit-service">Classic Fill</span><span class="elk-visit-meta">Technician · Accepted</span></span>
+          <span class="elk-visit-note-kind">Business note</span>
+        </button>
+        <button class="elk-visit" type="button" role="listitem" aria-pressed="false" data-date="Jul 19, 2026" data-context="Volume Fill · Technician · Accepted" data-kind="No note" data-note="No appointment note recorded.">
+          <span class="elk-visit-dot" aria-hidden="true">•</span>
+          <span class="elk-visit-date">Jul 19</span>
+          <span class="elk-visit-copy"><span class="elk-visit-service">Volume Fill</span><span class="elk-visit-meta">Technician · Accepted</span></span>
+          <span class="elk-visit-no-note">No note</span>
+        </button>
+        <button class="elk-visit has-note" type="button" role="listitem" aria-pressed="false" data-date="Jun 28, 2026" data-context="Classic Fill · Technician · Accepted" data-kind="Customer note" data-note="Please allow a few extra minutes for consultation.">
+          <span class="elk-visit-dot" aria-hidden="true">•</span>
+          <span class="elk-visit-date">Jun 28</span>
+          <span class="elk-visit-copy"><span class="elk-visit-service">Classic Fill</span><span class="elk-visit-meta">Technician · Accepted</span></span>
+          <span class="elk-visit-note-kind">Customer note</span>
+        </button>
+        <button class="elk-visit" type="button" role="listitem" aria-pressed="false" data-date="Jun 7, 2026" data-context="Classic Fill · Technician · Accepted" data-kind="No note" data-note="No appointment note recorded.">
+          <span class="elk-visit-dot" aria-hidden="true">•</span>
+          <span class="elk-visit-date">Jun 7</span>
+          <span class="elk-visit-copy"><span class="elk-visit-service">Classic Fill</span><span class="elk-visit-meta">Technician · Accepted</span></span>
+          <span class="elk-visit-no-note">No note</span>
+        </button>
+        <button class="elk-visit has-note" type="button" role="listitem" aria-pressed="false" data-date="May 18, 2026" data-context="Volume Fill · Technician · Cancelled" data-kind="Business note" data-note="Client called ahead to reschedule; retain the styling preference.">
+          <span class="elk-visit-dot" aria-hidden="true">•</span>
+          <span class="elk-visit-date">May 18</span>
+          <span class="elk-visit-copy"><span class="elk-visit-service">Volume Fill</span><span class="elk-visit-meta">Technician · Cancelled</span></span>
+          <span class="elk-visit-note-kind">Business note</span>
+        </button>
+
+        <button class="elk-visit" type="button" role="listitem" aria-pressed="false" hidden data-older-visit data-date="Apr 27, 2026" data-context="Classic Fill · Technician · Accepted" data-kind="No note" data-note="No appointment note recorded.">
+          <span class="elk-visit-dot" aria-hidden="true">•</span>
+          <span class="elk-visit-date">Apr 27</span>
+          <span class="elk-visit-copy"><span class="elk-visit-service">Classic Fill</span><span class="elk-visit-meta">Technician · Accepted</span></span>
+          <span class="elk-visit-no-note">No note</span>
+        </button>
+        <button class="elk-visit has-note" type="button" role="listitem" aria-pressed="false" hidden data-older-visit data-date="Apr 5, 2026" data-context="Classic Fill · Technician · Accepted" data-kind="Business note" data-note="Used sensitive adhesive with good retention.">
+          <span class="elk-visit-dot" aria-hidden="true">•</span>
+          <span class="elk-visit-date">Apr 5</span>
+          <span class="elk-visit-copy"><span class="elk-visit-service">Classic Fill</span><span class="elk-visit-meta">Technician · Accepted</span></span>
+          <span class="elk-visit-note-kind">Business note</span>
+        </button>
+        <button class="elk-visit" type="button" role="listitem" aria-pressed="false" hidden data-older-visit data-date="Mar 15, 2026" data-context="Full Set · Technician · Accepted" data-kind="No note" data-note="No appointment note recorded.">
+          <span class="elk-visit-dot" aria-hidden="true">•</span>
+          <span class="elk-visit-date">Mar 15</span>
+          <span class="elk-visit-copy"><span class="elk-visit-service">Full Set</span><span class="elk-visit-meta">Technician · Accepted</span></span>
+          <span class="elk-visit-no-note">No note</span>
+        </button>
+      </div>
+
+      <div class="elk-visit-detail" aria-live="polite">
+        <div class="elk-detail-heading">
+          <h4 data-selected-date>Aug 9, 2026</h4>
+          <span class="elk-visit-note-kind" data-selected-kind>Business note</span>
+        </div>
+        <p class="elk-visit-meta" data-selected-context>Classic Fill · Technician · Accepted</p>
+        <p data-selected-note>Use the lighter curl selected at consultation.</p>
+      </div>
+
+      <button class="elk-show-more" type="button" aria-expanded="false">Show 3 older appointments</button>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const root = document.getElementById('elk-history-mockup');
+      const visits = Array.from(root.querySelectorAll('.elk-visit'));
+      const olderVisits = Array.from(root.querySelectorAll('[data-older-visit]'));
+      const showMore = root.querySelector('.elk-show-more');
+      const selectedDate = root.querySelector('[data-selected-date]');
+      const selectedKind = root.querySelector('[data-selected-kind]');
+      const selectedContext = root.querySelector('[data-selected-context]');
+      const selectedNote = root.querySelector('[data-selected-note]');
+
+      visits.forEach((visit) => {
+        visit.addEventListener('click', () => {
+          visits.forEach((item) => {
+            item.classList.remove('is-selected');
+            item.setAttribute('aria-pressed', 'false');
+          });
+          visit.classList.add('is-selected');
+          visit.setAttribute('aria-pressed', 'true');
+          selectedDate.textContent = visit.dataset.date;
+          selectedKind.textContent = visit.dataset.kind;
+          selectedContext.textContent = visit.dataset.context;
+          selectedNote.textContent = visit.dataset.note;
+        });
+      });
+
+      showMore.addEventListener('click', () => {
+        const expanding = showMore.getAttribute('aria-expanded') !== 'true';
+        olderVisits.forEach((visit) => {
+          visit.hidden = !expanding;
+        });
+        showMore.setAttribute('aria-expanded', String(expanding));
+        showMore.textContent = expanding ? 'Hide older appointments' : 'Show 3 older appointments';
+      });
+    })();
+  </script>
+</div>

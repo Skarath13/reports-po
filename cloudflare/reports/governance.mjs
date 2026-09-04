@@ -1,3 +1,17 @@
+import {
+  SECTION_DEFINITIONS,
+  SectionGovernanceError,
+  acknowledgeSectionEntry,
+  buildDuplicateSectionSnapshots,
+  buildFullReportSectionSnapshots,
+  getMySectionState,
+  getObservedSectionSnapshotsForAudit,
+  getSectionAuditEvents,
+  persistObservedSnapshots,
+  recordSectionSignoff,
+  snapshotsForClient,
+} from './section-governance.mjs';
+
 const PACIFIC_TIME_ZONE = 'America/Los_Angeles';
 const GOVERNANCE_DB_BINDING = 'REPORTS_GOVERNANCE_DB';
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -159,6 +173,29 @@ async function parseJson(request) {
   }
 }
 
+function sectionGovernanceErrorResponse(error) {
+  if (error instanceof SectionGovernanceError) {
+    return jsonResponse({
+      error: error.message,
+      code: error.code,
+      ...(error.details || {}),
+    }, { status: error.status });
+  }
+  return governanceUnavailableResponse();
+}
+
+function originJsonResponse(originResponse, payload) {
+  const headers = new Headers(originResponse.headers);
+  headers.delete('content-length');
+  headers.set('Content-Type', 'application/json; charset=utf-8');
+  headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  return new Response(JSON.stringify(payload), {
+    status: originResponse.status,
+    statusText: originResponse.statusText,
+    headers,
+  });
+}
+
 function validationError(message, code = 'INVALID_REQUEST') {
   return jsonResponse({ error: message, code }, { status: 400 });
 }
@@ -247,7 +284,14 @@ async function isAuditViewer(env, actorId) {
 
 async function getAuditData(env, reportDate) {
   const db = getDb(env);
-  const [requiredSigners, signoffs, logins, views] = await Promise.all([
+  const [
+    requiredSigners,
+    signoffs,
+    sectionSignoffs,
+    observedSectionSnapshots,
+    logins,
+    views,
+  ] = await Promise.all([
     db.prepare(`
       SELECT actor_id, display_name, sort_order
       FROM governance_required_signers
@@ -261,6 +305,8 @@ async function getAuditData(env, reportDate) {
       ORDER BY signed_at_utc ASC
       LIMIT ${MAX_AUDIT_ROWS}
     `).bind(reportDate).all(),
+    getSectionAuditEvents(db, reportDate),
+    getObservedSectionSnapshotsForAudit(db, reportDate),
     db.prepare(`
       SELECT actor_id, username, role, logged_in_at_utc, event_date_pacific
       FROM governance_login_events
@@ -282,6 +328,9 @@ async function getAuditData(env, reportDate) {
     locations: LOCATIONS,
     requiredSigners: requiredSigners.results || [],
     signoffs: signoffs.results || [],
+    sectionDefinitions: SECTION_DEFINITIONS,
+    sectionSignoffs,
+    observedSectionSnapshots,
     logins: logins.results || [],
     views: views.results || [],
   };
@@ -326,21 +375,183 @@ async function handleFullReportView(request, env, proxyToOrigin) {
   if (!originResponse.ok) return originResponse;
 
   try {
+    const report = await originResponse.clone().json();
+    const snapshots = await buildFullReportSectionSnapshots(report, {
+      secret: env.GOVERNANCE_FINGERPRINT_SECRET,
+      actorId: auth.principal.id,
+      reportDate,
+      locationId: location.id,
+    });
+    const observedAtUtc = await persistObservedSnapshots(
+      getDb(env),
+      auth.principal,
+      reportDate,
+      { [location.id]: snapshots }
+    );
     await recordView(env, auth.principal, {
       reportDate,
       locationId: location.id,
       sessionId,
     });
+    return originJsonResponse(originResponse, {
+      ...report,
+      _governance: {
+        version: 2,
+        sectionSnapshots: snapshotsForClient(snapshots, observedAtUtc),
+      },
+    });
   } catch (_error) {
-    return governanceUnavailableResponse();
+    return sectionGovernanceErrorResponse(_error);
+  }
+}
+
+async function handleAllLocationsReport(request, env, proxyToOrigin) {
+  const pathMatch = new URL(request.url).pathname.match(
+    /^\/api\/reports\/all-locations\/([^/]+)\/?$/
+  );
+  if (!pathMatch) return null;
+
+  const reportDate = normalizeReportDate(decodePathSegment(pathMatch[1]));
+  if (!reportDate) {
+    return validationError('A valid report date is required.');
   }
 
-  return originResponse;
+  const auth = await verifyPrincipal(request, proxyToOrigin);
+  if (auth.response) return auth.response;
+
+  const originResponse = await proxyToOrigin(request);
+  if (!originResponse.ok) return originResponse;
+
+  try {
+    const report = await originResponse.clone().json();
+    const duplicateSnapshots = await buildDuplicateSectionSnapshots(report, {
+      secret: env.GOVERNANCE_FINGERPRINT_SECRET,
+      actorId: auth.principal.id,
+      reportDate,
+      locations: LOCATIONS,
+    });
+    const snapshotsByLocation = Object.fromEntries(
+      Object.entries(duplicateSnapshots).map(([locationId, snapshot]) => [
+        locationId,
+        { duplicates: snapshot },
+      ])
+    );
+    const observedAtUtc = await persistObservedSnapshots(
+      getDb(env),
+      auth.principal,
+      reportDate,
+      snapshotsByLocation
+    );
+    const duplicateSnapshotsByLocation = Object.fromEntries(
+      Object.entries(duplicateSnapshots).map(([locationId, snapshot]) => [
+        locationId,
+        snapshotsForClient({ duplicates: snapshot }, observedAtUtc).duplicates,
+      ])
+    );
+
+    return originJsonResponse(originResponse, {
+      ...report,
+      _governance: {
+        version: 2,
+        duplicateSnapshotsByLocation,
+      },
+    });
+  } catch (_error) {
+    return sectionGovernanceErrorResponse(_error);
+  }
 }
 
 async function handleGovernanceRoute(request, env, proxyToOrigin) {
   const url = new URL(request.url);
   const pathname = url.pathname;
+
+  if (pathname === '/api/reports/governance/sections' && request.method === 'GET') {
+    const reportDate = normalizeReportDate(url.searchParams.get('date'));
+    const location = resolveLocation(url.searchParams.get('locationId'));
+    if (!reportDate || !location) {
+      return validationError('A valid report date and location are required.');
+    }
+
+    const auth = await verifyPrincipal(request, proxyToOrigin);
+    if (auth.response) return auth.response;
+
+    try {
+      return jsonResponse(await getMySectionState(getDb(env), auth.principal, {
+        reportDate,
+        locationId: location.id,
+      }));
+    } catch (_error) {
+      return sectionGovernanceErrorResponse(_error);
+    }
+  }
+
+  if (pathname === '/api/reports/governance/sections/signoffs' && request.method === 'POST') {
+    const body = await parseJson(request);
+    const reportDate = normalizeReportDate(body?.reportDate || body?.date);
+    const location = resolveLocation(body?.locationId);
+    const requestId = normalizeSessionId(body?.requestId);
+    if (!reportDate || !location || !requestId) {
+      return validationError('A valid report date, location, and review request ID are required.');
+    }
+    if (reportDate !== getPacificDate()) {
+      return jsonResponse({
+        error: 'Report sections can only be signed off for today in Pacific time.',
+        code: 'SIGNOFF_TODAY_ONLY',
+      }, { status: 422 });
+    }
+
+    const auth = await verifyPrincipal(request, proxyToOrigin);
+    if (auth.response) return auth.response;
+
+    try {
+      const result = await recordSectionSignoff(getDb(env), auth.principal, {
+        reportDate,
+        locationId: location.id,
+        sectionKey: body?.sectionKey,
+        snapshotHash: body?.snapshotHash,
+        requestId,
+      });
+      return jsonResponse({
+        reportDate,
+        locationId: location.id,
+        ...result,
+      }, { status: result.replayed ? 200 : 201 });
+    } catch (_error) {
+      return sectionGovernanceErrorResponse(_error);
+    }
+  }
+
+  if (pathname === '/api/reports/governance/sections/acknowledgements' && request.method === 'POST') {
+    const body = await parseJson(request);
+    const reportDate = normalizeReportDate(body?.reportDate || body?.date);
+    const location = resolveLocation(body?.locationId);
+    if (!reportDate || !location) {
+      return validationError('A valid report date and location are required.');
+    }
+    if (reportDate !== getPacificDate()) {
+      return jsonResponse({
+        error: 'Updates can only be acknowledged for today in Pacific time.',
+        code: 'ACKNOWLEDGEMENT_TODAY_ONLY',
+      }, { status: 422 });
+    }
+
+    const auth = await verifyPrincipal(request, proxyToOrigin);
+    if (auth.response) return auth.response;
+
+    try {
+      const result = await acknowledgeSectionEntry(getDb(env), auth.principal, {
+        reportDate,
+        locationId: location.id,
+        sectionKey: body?.sectionKey,
+        snapshotHash: body?.snapshotHash,
+        entryKey: body?.entryKey,
+        contentVersion: body?.contentVersion,
+      });
+      return jsonResponse({ reportDate, locationId: location.id, ...result });
+    } catch (_error) {
+      return sectionGovernanceErrorResponse(_error);
+    }
+  }
 
   if (pathname === '/api/reports/governance/signoffs' && request.method === 'GET') {
     const reportDate = normalizeReportDate(url.searchParams.get('date'));
@@ -446,6 +657,10 @@ export function createGovernanceHandler() {
 
     if (url.pathname.startsWith('/api/reports/full/') && request.method === 'GET') {
       return handleFullReportView(request, env, proxy);
+    }
+
+    if (url.pathname.startsWith('/api/reports/all-locations/') && request.method === 'GET') {
+      return handleAllLocationsReport(request, env, proxy);
     }
 
     return null;

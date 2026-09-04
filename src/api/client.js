@@ -81,7 +81,11 @@ class ReportsAPIClient {
     }
 
     if (!response.ok) {
-      throw new Error(data?.error || data?.msg || 'API request failed');
+      const error = new Error(data?.error || data?.msg || 'API request failed');
+      error.code = data?.code || null;
+      error.status = response.status;
+      error.currentSnapshotHash = data?.currentSnapshotHash || null;
+      throw error;
     }
 
     return data;
@@ -146,6 +150,45 @@ class ReportsAPIClient {
     return this.request('/governance/signoffs', {
       method: 'POST',
       body: JSON.stringify({ reportDate: date, locationId }),
+    });
+  }
+
+  async getSectionReviews(date, locationId) {
+    const query = new URLSearchParams({ date, locationId });
+    return this.request(`/governance/sections?${query.toString()}`);
+  }
+
+  async submitSectionSignoff({ date, locationId, sectionKey, snapshotHash, requestId }) {
+    return this.request('/governance/sections/signoffs', {
+      method: 'POST',
+      body: JSON.stringify({
+        reportDate: date,
+        locationId,
+        sectionKey,
+        snapshotHash,
+        requestId,
+      }),
+    });
+  }
+
+  async acknowledgeSectionEntry({
+    date,
+    locationId,
+    sectionKey,
+    snapshotHash,
+    entryKey,
+    contentVersion,
+  }) {
+    return this.request('/governance/sections/acknowledgements', {
+      method: 'POST',
+      body: JSON.stringify({
+        reportDate: date,
+        locationId,
+        sectionKey,
+        snapshotHash,
+        entryKey,
+        contentVersion,
+      }),
     });
   }
 

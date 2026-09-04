@@ -4,3 +4,4 @@ KIOSK_RELEASE_POLICY_KV_KEY=kiosk-release-policy:override
 # Set both only when testing through a Cloudflare Access-protected origin.
 # ORIGIN_ACCESS_CLIENT_ID=
 # ORIGIN_ACCESS_CLIENT_SECRET=
+# GOVERNANCE_FINGERPRINT_SECRET=use-at-least-32-random-characters

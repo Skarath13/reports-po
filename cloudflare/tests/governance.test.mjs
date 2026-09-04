@@ -97,6 +97,105 @@ class FakeStatement {
       return { success: true, meta: { changes: duplicate ? 0 : 1 } };
     }
 
+    if (this.sql.includes('INSERT INTO governance_observed_section_snapshots')) {
+      const [reportDate, locationId, sectionKey, actorId, snapshotHash, entriesJson, observedAtUtc] = this.params;
+      const existing = this.db.observedSnapshots.find((snapshot) => (
+        snapshot.report_date === reportDate &&
+        snapshot.location_id === locationId &&
+        snapshot.section_key === sectionKey &&
+        snapshot.actor_id === actorId
+      ));
+      const next = {
+        report_date: reportDate,
+        location_id: locationId,
+        section_key: sectionKey,
+        actor_id: actorId,
+        snapshot_hash: snapshotHash,
+        entries_json: entriesJson,
+        observed_at_utc: observedAtUtc,
+      };
+      if (existing) Object.assign(existing, next);
+      else this.db.observedSnapshots.push(next);
+      return { success: true, meta: { changes: 1 } };
+    }
+
+    if (this.sql.includes('INSERT INTO governance_section_signoff_events')) {
+      const [
+        requestId,
+        reportDate,
+        locationId,
+        sectionKey,
+        actorId,
+        username,
+        snapshotHash,
+        entriesJson,
+        itemCount,
+        signedAtUtc,
+      ] = this.params;
+      const duplicate = this.db.sectionSignoffs.find((event) => (
+        event.actor_id === actorId && event.request_id === requestId
+      ));
+      if (duplicate) throw new Error('UNIQUE constraint failed');
+      this.db.sectionSignoffs.push({
+        id: this.db.nextSectionSignoffId++,
+        request_id: requestId,
+        report_date: reportDate,
+        location_id: locationId,
+        section_key: sectionKey,
+        actor_id: actorId,
+        username,
+        snapshot_hash: snapshotHash,
+        entries_json: entriesJson,
+        item_count: itemCount,
+        signed_at_utc: signedAtUtc,
+      });
+      return { success: true, meta: { changes: 1 } };
+    }
+
+    if (this.sql.includes('DELETE FROM governance_entry_acknowledgements')) {
+      const [reportDate, locationId, sectionKey, actorId] = this.params;
+      this.db.acknowledgements = this.db.acknowledgements.filter((acknowledgement) => !(
+        acknowledgement.report_date === reportDate &&
+        acknowledgement.location_id === locationId &&
+        acknowledgement.section_key === sectionKey &&
+        acknowledgement.actor_id === actorId
+      ));
+      return { success: true, meta: { changes: 1 } };
+    }
+
+    if (this.sql.includes('INSERT INTO governance_entry_acknowledgements')) {
+      const [
+        reportDate,
+        locationId,
+        sectionKey,
+        actorId,
+        entryKey,
+        contentVersion,
+        observedSnapshotHash,
+        acknowledgedAtUtc,
+      ] = this.params;
+      const existing = this.db.acknowledgements.find((acknowledgement) => (
+        acknowledgement.report_date === reportDate &&
+        acknowledgement.location_id === locationId &&
+        acknowledgement.section_key === sectionKey &&
+        acknowledgement.actor_id === actorId &&
+        acknowledgement.entry_key === entryKey
+      ));
+      const next = {
+        report_date: reportDate,
+        location_id: locationId,
+        section_key: sectionKey,
+        actor_id: actorId,
+        entry_key: entryKey,
+        content_version: contentVersion,
+        observed_snapshot_hash: observedSnapshotHash,
+        acknowledged_at_utc: acknowledgedAtUtc,
+      };
+      if (existing) Object.assign(existing, next);
+      else this.db.acknowledgements.push(next);
+      return { success: true, meta: { changes: 1 } };
+    }
+
     return { success: true, meta: { changes: 0 } };
   }
 
@@ -117,6 +216,34 @@ class FakeStatement {
       )) || null;
     }
 
+    if (this.sql.includes('FROM governance_observed_section_snapshots')) {
+      const [reportDate, locationId, sectionKey, actorId] = this.params;
+      return this.db.observedSnapshots.find((snapshot) => (
+        snapshot.report_date === reportDate &&
+        snapshot.location_id === locationId &&
+        snapshot.section_key === sectionKey &&
+        snapshot.actor_id === actorId
+      )) || null;
+    }
+
+    if (this.sql.includes('FROM governance_section_signoff_events')) {
+      if (this.sql.includes('WHERE actor_id = ? AND request_id = ?')) {
+        const [actorId, requestId] = this.params;
+        return this.db.sectionSignoffs.find((event) => (
+          event.actor_id === actorId && event.request_id === requestId
+        )) || null;
+      }
+      const [reportDate, locationId, sectionKey, actorId] = this.params;
+      return [...this.db.sectionSignoffs]
+        .filter((event) => (
+          event.report_date === reportDate &&
+          event.location_id === locationId &&
+          event.section_key === sectionKey &&
+          event.actor_id === actorId
+        ))
+        .sort((left, right) => right.id - left.id)[0] || null;
+    }
+
     return null;
   }
 
@@ -129,6 +256,41 @@ class FakeStatement {
     if (this.sql.includes('FROM governance_signoffs')) {
       const [reportDate] = this.params;
       return { results: this.db.signoffs.filter((signoff) => signoff.report_date === reportDate) };
+    }
+    if (this.sql.includes('FROM governance_section_signoff_events')) {
+      const [reportDate, locationId, actorId] = this.params;
+      if (this.sql.includes('location_id = ? AND actor_id = ?')) {
+        return {
+          results: [...this.db.sectionSignoffs]
+            .filter((event) => (
+              event.report_date === reportDate &&
+              event.location_id === locationId &&
+              event.actor_id === actorId
+            ))
+            .sort((left, right) => right.id - left.id),
+        };
+      }
+      return {
+        results: this.db.sectionSignoffs.filter((event) => event.report_date === reportDate),
+      };
+    }
+    if (this.sql.includes('FROM governance_observed_section_snapshots')) {
+      const [reportDate] = this.params;
+      return {
+        results: this.db.observedSnapshots.filter((snapshot) => (
+          snapshot.report_date === reportDate
+        )),
+      };
+    }
+    if (this.sql.includes('FROM governance_entry_acknowledgements')) {
+      const [reportDate, locationId, actorId] = this.params;
+      return {
+        results: this.db.acknowledgements.filter((acknowledgement) => (
+          acknowledgement.report_date === reportDate &&
+          acknowledgement.location_id === locationId &&
+          acknowledgement.actor_id === actorId
+        )),
+      };
     }
     if (this.sql.includes('FROM governance_login_events')) {
       const [eventDatePacific] = this.params;
@@ -148,6 +310,10 @@ class FakeD1 {
     this.logins = [];
     this.views = [];
     this.signoffs = [];
+    this.observedSnapshots = [];
+    this.sectionSignoffs = [];
+    this.acknowledgements = [];
+    this.nextSectionSignoffId = 1;
     this.viewerIds = new Set([KATELYN_ID]);
     this.requiredSigners = [
       { actor_id: ROSS_ID, display_name: 'Ross', sort_order: 1 },
@@ -158,6 +324,11 @@ class FakeD1 {
 
   prepare(sql) {
     return new FakeStatement(this, sql);
+  }
+
+  async batch(statements) {
+    if (this.fail) throw new Error('D1 unavailable');
+    return Promise.all(statements.map((statement) => statement.run()));
   }
 }
 
@@ -187,7 +358,26 @@ function makeOriginFetcher() {
     }
 
     if (url.pathname.startsWith('/api/reports/full/')) {
-      return new Response(JSON.stringify({ report: 'protected' }), {
+      return new Response(JSON.stringify({
+        date: today(),
+        generatedAt: new Date().toISOString(),
+        totalAppointments: 0,
+        technicians: [],
+        byTechnician: {},
+        anyoneAvailable: [],
+        rankedByLikelihood: [],
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (url.pathname.startsWith('/api/reports/all-locations/')) {
+      return new Response(JSON.stringify({
+        date: today(),
+        totalAppointments: 0,
+        appointments: [],
+      }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -224,6 +414,7 @@ function makeEnv(db) {
   return {
     ORIGIN_BASE_URL: 'https://origin.example.com',
     REPORTS_GOVERNANCE_DB: db,
+    GOVERNANCE_FINGERPRINT_SECRET: 'test-governance-fingerprint-secret-1234567890',
   };
 }
 
@@ -361,6 +552,268 @@ test('sign-offs are restricted to the current Pacific date', async () => {
     assert.equal(response.status, 422);
     assert.equal((await json(response)).code, 'SIGNOFF_TODAY_ONLY');
   }
+});
+
+test('section sign-offs bind to the authenticated user and exact observed snapshot', async () => {
+  const worker = makeWorker();
+  const db = new FakeD1();
+  const reportDate = today();
+  const fullReport = await worker.fetch(
+    makeRequest(`/api/reports/full/${reportDate}/G0X353MBKGTCW`, {
+      token: 'ross-token',
+      headers: { 'x-report-view-session': 'section-browser-session-123' },
+    }),
+    makeEnv(db)
+  );
+  assert.equal(fullReport.status, 200);
+  const fullBody = await json(fullReport);
+  const calendarSnapshot = fullBody._governance.sectionSnapshots.calendar;
+  assert.match(calendarSnapshot.snapshotHash, /^[a-f0-9]{64}$/);
+  assert.deepEqual(calendarSnapshot.entries, []);
+
+  const requestId = 'section-review-request-0001';
+  const signed = await worker.fetch(
+    makeRequest('/api/reports/governance/sections/signoffs', {
+      method: 'POST',
+      token: 'ross-token',
+      body: {
+        reportDate,
+        locationId: 'tustin',
+        sectionKey: 'calendar',
+        snapshotHash: calendarSnapshot.snapshotHash,
+        requestId,
+        actorId: ARCHIE_ID,
+      },
+    }),
+    makeEnv(db)
+  );
+  assert.equal(signed.status, 201);
+  const signedBody = await json(signed);
+  assert.equal(signedBody.review.sectionKey, 'calendar');
+  assert.equal(db.sectionSignoffs[0].actor_id, ROSS_ID);
+
+  const replay = await worker.fetch(
+    makeRequest('/api/reports/governance/sections/signoffs', {
+      method: 'POST',
+      token: 'ross-token',
+      body: {
+        reportDate,
+        locationId: 'tustin',
+        sectionKey: 'calendar',
+        snapshotHash: calendarSnapshot.snapshotHash,
+        requestId,
+      },
+    }),
+    makeEnv(db)
+  );
+  assert.equal(replay.status, 200);
+  assert.equal((await json(replay)).replayed, true);
+  assert.equal(db.sectionSignoffs.length, 1);
+
+  const concurrentRequest = {
+    method: 'POST',
+    token: 'ross-token',
+    body: {
+      reportDate,
+      locationId: 'tustin',
+      sectionKey: 'notes',
+      snapshotHash: fullBody._governance.sectionSnapshots.notes.snapshotHash,
+      requestId: 'section-review-request-concurrent',
+    },
+  };
+  const concurrentResponses = await Promise.all([
+    worker.fetch(
+      makeRequest('/api/reports/governance/sections/signoffs', concurrentRequest),
+      makeEnv(db)
+    ),
+    worker.fetch(
+      makeRequest('/api/reports/governance/sections/signoffs', concurrentRequest),
+      makeEnv(db)
+    ),
+  ]);
+  assert.deepEqual(concurrentResponses.map((response) => response.status).sort(), [200, 201]);
+  assert.equal(db.sectionSignoffs.filter((event) => (
+    event.request_id === 'section-review-request-concurrent'
+  )).length, 1);
+
+  const rossState = await worker.fetch(
+    makeRequest(`/api/reports/governance/sections?date=${reportDate}&locationId=tustin`, {
+      token: 'ross-token',
+    }),
+    makeEnv(db)
+  );
+  assert.equal((await json(rossState)).reviews.length, 2);
+
+  const tonetState = await worker.fetch(
+    makeRequest(`/api/reports/governance/sections?date=${reportDate}&locationId=tustin`, {
+      token: 'tonet-token',
+    }),
+    makeEnv(db)
+  );
+  assert.equal((await json(tonetState)).reviews.length, 0);
+
+  const audit = await worker.fetch(
+    makeRequest(`/api/reports/governance/audit?date=${reportDate}`, {
+      token: 'katelyn-token',
+    }),
+    makeEnv(db)
+  );
+  const auditBody = await json(audit);
+  assert.equal(audit.status, 200);
+  assert.equal(auditBody.sectionSignoffs.length, 2);
+  assert.equal(auditBody.observedSectionSnapshots.length, 5);
+  assert.equal(
+    auditBody.observedSectionSnapshots.find((snapshot) => (
+      snapshot.actor_id === ROSS_ID && snapshot.section_key === 'calendar'
+    )).snapshot_hash,
+    signedBody.review.snapshotHash
+  );
+});
+
+test('cross-location responses carry a separately observed duplicate snapshot for every location', async () => {
+  const worker = makeWorker();
+  const db = new FakeD1();
+  const reportDate = today();
+  const response = await worker.fetch(
+    makeRequest(`/api/reports/all-locations/${reportDate}`, { token: 'ross-token' }),
+    makeEnv(db)
+  );
+
+  assert.equal(response.status, 200);
+  const body = await json(response);
+  assert.deepEqual(
+    Object.keys(body._governance.duplicateSnapshotsByLocation).sort(),
+    LOCATIONS.map((location) => location.id).sort()
+  );
+  assert.equal(db.observedSnapshots.filter((snapshot) => snapshot.section_key === 'duplicates').length, 5);
+});
+
+test('stale section sign-offs and acknowledgements fail closed', async () => {
+  const worker = makeWorker();
+  const db = new FakeD1();
+  const reportDate = today();
+  const fullReport = await worker.fetch(
+    makeRequest(`/api/reports/full/${reportDate}/G0X353MBKGTCW`, {
+      token: 'ross-token',
+      headers: { 'x-report-view-session': 'section-browser-session-456' },
+    }),
+    makeEnv(db)
+  );
+  const calendarSnapshot = (await json(fullReport))._governance.sectionSnapshots.calendar;
+
+  const initialSignoff = await worker.fetch(
+    makeRequest('/api/reports/governance/sections/signoffs', {
+      method: 'POST',
+      token: 'ross-token',
+      body: {
+        reportDate,
+        locationId: 'tustin',
+        sectionKey: 'calendar',
+        snapshotHash: calendarSnapshot.snapshotHash,
+        requestId: 'section-review-request-0002',
+      },
+    }),
+    makeEnv(db)
+  );
+  assert.equal(initialSignoff.status, 201);
+
+  const observed = db.observedSnapshots.find((snapshot) => snapshot.section_key === 'calendar');
+  const entryKey = 'a'.repeat(64);
+  const contentVersion = 'b'.repeat(64);
+  observed.snapshot_hash = 'c'.repeat(64);
+  observed.entries_json = JSON.stringify([{ entryKey, contentVersion }]);
+
+  const staleSignoff = await worker.fetch(
+    makeRequest('/api/reports/governance/sections/signoffs', {
+      method: 'POST',
+      token: 'ross-token',
+      body: {
+        reportDate,
+        locationId: 'tustin',
+        sectionKey: 'calendar',
+        snapshotHash: calendarSnapshot.snapshotHash,
+        requestId: 'section-review-request-0003',
+      },
+    }),
+    makeEnv(db)
+  );
+  assert.equal(staleSignoff.status, 409);
+  assert.equal((await json(staleSignoff)).code, 'REPORT_CHANGED');
+
+  const acknowledged = await worker.fetch(
+    makeRequest('/api/reports/governance/sections/acknowledgements', {
+      method: 'POST',
+      token: 'ross-token',
+      body: {
+        reportDate,
+        locationId: 'tustin',
+        sectionKey: 'calendar',
+        snapshotHash: observed.snapshot_hash,
+        entryKey,
+        contentVersion,
+      },
+    }),
+    makeEnv(db)
+  );
+  assert.equal(acknowledged.status, 200);
+  assert.equal((await json(acknowledged)).acknowledged, true);
+  assert.equal(db.acknowledgements.length, 1);
+
+  const staleAcknowledgement = await worker.fetch(
+    makeRequest('/api/reports/governance/sections/acknowledgements', {
+      method: 'POST',
+      token: 'ross-token',
+      body: {
+        reportDate,
+        locationId: 'tustin',
+        sectionKey: 'calendar',
+        snapshotHash: observed.snapshot_hash,
+        entryKey,
+        contentVersion: 'd'.repeat(64),
+      },
+    }),
+    makeEnv(db)
+  );
+  assert.equal(staleAcknowledgement.status, 409);
+  assert.equal((await json(staleAcknowledgement)).code, 'ENTRY_CHANGED');
+});
+
+test('section routes validate allowlisted sections and current Pacific date', async () => {
+  const worker = makeWorker();
+  const db = new FakeD1();
+  const invalidSection = await worker.fetch(
+    makeRequest('/api/reports/governance/sections/signoffs', {
+      method: 'POST',
+      token: 'ross-token',
+      body: {
+        reportDate: today(),
+        locationId: 'tustin',
+        sectionKey: 'made-up-section',
+        snapshotHash: 'a'.repeat(64),
+        requestId: 'section-review-request-0004',
+      },
+    }),
+    makeEnv(db)
+  );
+  assert.equal(invalidSection.status, 400);
+  assert.equal((await json(invalidSection)).code, 'INVALID_SECTION');
+
+  const pastSignoff = await worker.fetch(
+    makeRequest('/api/reports/governance/sections/signoffs', {
+      method: 'POST',
+      token: 'ross-token',
+      body: {
+        reportDate: '2020-01-01',
+        locationId: 'tustin',
+        sectionKey: 'calendar',
+        snapshotHash: 'a'.repeat(64),
+        requestId: 'section-review-request-0005',
+      },
+    }),
+    makeEnv(db)
+  );
+  assert.equal(pastSignoff.status, 422);
+  assert.equal((await json(pastSignoff)).code, 'SIGNOFF_TODAY_ONLY');
 });
 
 test('automatic refreshes deduplicate first report views by browser session', async () => {

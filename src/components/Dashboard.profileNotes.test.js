@@ -5,8 +5,9 @@ import Dashboard from './Dashboard';
 jest.mock('../api/client', () => ({
   __esModule: true,
   default: {
-    getMySignoff: () => Promise.resolve({ signedOff: false, signedAtUtc: null }),
-    submitSignoff: () => Promise.resolve({ signedOff: true }),
+    getSectionReviews: () => Promise.resolve({ reviews: [], acknowledgements: [] }),
+    submitSectionSignoff: () => Promise.resolve({}),
+    acknowledgeSectionEntry: () => Promise.resolve({ acknowledged: true }),
     getAudit: () => Promise.resolve({}),
   },
 }));
@@ -90,7 +91,12 @@ jest.mock('../hooks/useReports', () => ({
     lastUpdated: null,
     refresh: jest.fn(),
   }),
-  useAllLocationAppointments: () => ({ data: { appointments: [] } }),
+  useAllLocationAppointments: () => ({
+    data: { date: '2026-08-30', appointments: [] },
+    loading: false,
+    error: null,
+    refresh: jest.fn(),
+  }),
 }));
 
 test('keeps profile and current notes visible above anyone-available bookings with history collapsed', async () => {

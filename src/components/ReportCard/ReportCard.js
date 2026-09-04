@@ -1,4 +1,5 @@
 import React from 'react';
+import { useUpdateAcknowledgement } from '../../hooks/useUpdateAcknowledgement';
 import './ReportCard.css';
 
 // Days-since color mapping
@@ -56,12 +57,16 @@ function ReportCard({
   technician,
   isCrossLocation,
   className,
+  isUpdated = false,
+  onUpdateSeen,
   children
 }) {
+  const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen);
   const cardClassName = [
     'report-card',
     variant,
     isCrossLocation ? 'cross-location' : '',
+    isUpdated ? 'review-update-cue' : '',
     className || ''
   ].filter(Boolean).join(' ');
 
@@ -69,7 +74,14 @@ function ReportCard({
   const isDuplicates = variant === 'duplicates';
 
   return (
-    <div className={cardClassName}>
+    <div
+      className={cardClassName}
+      tabIndex={isUpdated ? 0 : undefined}
+      {...updateHandlers}
+    >
+      {isUpdated && (
+        <span className="review-update-dot" aria-label="New since your review" />
+      )}
       {/* Cross-location indicator */}
       {isCrossLocation && <span className="cross-icon">🌐</span>}
 
