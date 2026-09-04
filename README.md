@@ -83,6 +83,14 @@ Worker secrets should only be:
 
 - `ORIGIN_ACCESS_CLIENT_ID`
 - `ORIGIN_ACCESS_CLIENT_SECRET`
+- `GOVERNANCE_FINGERPRINT_SECRET`
+
+Section reviews require migration `0002_section_governance.sql` and a stable,
+randomly generated fingerprinting secret of at least 32 characters. Set that
+secret with `npx wrangler secret put GOVERNANCE_FINGERPRINT_SECRET --config cloudflare/reports/wrangler.jsonc`
+before deploying section reviews. Its value stays in Worker secrets and must not
+be committed or included in the browser build. Rotating it invalidates existing
+review fingerprints.
 
 Do not add Supabase service-role, Square, Twilio, Brevo, Bloom, deploy-health, or VPS secrets to this browser app or Worker.
 
