@@ -13,15 +13,15 @@ const mockLocations = [
 const KATELYN_AUDIT_VIEWER_ID = '9dee6da3-789a-46de-88f2-128385b2a4c0';
 
 const mockApi = {
-  getSectionReviews: jest.fn(),
-  submitSectionSignoff: jest.fn(),
-  acknowledgeSectionEntry: jest.fn(),
-  getAudit: jest.fn(),
+  getSectionReviews: vi.fn(),
+  submitSectionSignoff: vi.fn(),
+  acknowledgeSectionEntry: vi.fn(),
+  getAudit: vi.fn(),
 };
 
-const mockUseFullReport = jest.fn();
+const mockUseFullReport = vi.fn();
 
-jest.mock('../api/client', () => ({
+vi.mock('../api/client', () => ({
   __esModule: true,
   default: {
     getSectionReviews: (...args) => globalThis.__reportsGovernanceApi.getSectionReviews(...args),
@@ -31,7 +31,7 @@ jest.mock('../api/client', () => ({
   },
 }));
 
-jest.mock('../hooks/useReports', () => {
+vi.mock('../hooks/useReports', () => {
   const locations = [
     { id: 'tustin', name: 'Tustin', squareId: 'G0X353MBKGTCW', color: '#3498db' },
     { id: 'costa-mesa', name: 'Costa Mesa', squareId: 'LVMKS7ERWS3KP', color: '#9b59b6' },
@@ -47,7 +47,7 @@ jest.mock('../hooks/useReports', () => {
       data: globalThis.__reportsAllLocationsData,
       loading: false,
       error: null,
-      refresh: jest.fn(),
+      refresh: vi.fn(),
     }),
   };
 });
@@ -115,7 +115,7 @@ function renderDashboard(username = 'Ross') {
   return render(
     <Dashboard
       user={{ id: `${username.toLowerCase()}-id`, username }}
-      onLogout={jest.fn()}
+      onLogout={vi.fn()}
     />
   );
 }
@@ -130,7 +130,7 @@ beforeEach(() => {
     loading: false,
     error: null,
     lastUpdated: null,
-    refresh: jest.fn(),
+    refresh: vi.fn(),
   });
   globalThis.__reportsAllLocationsData = {
     date: getPacificDate(),
@@ -164,7 +164,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 test('shows all five locations and a review control for every section', async () => {
@@ -240,7 +240,7 @@ test('shows a changed appointment only after a baseline and persists its dismiss
     loading: false,
     error: null,
     lastUpdated: null,
-    refresh: jest.fn(),
+    refresh: vi.fn(),
   });
   mockApi.getSectionReviews.mockResolvedValue({
     reviews: [{
@@ -274,7 +274,7 @@ test('only the configured Katelyn account can open the audit panel', async () =>
   rerender(
     <Dashboard
       user={{ id: 'not-katelyn-id', username: 'Katelyn' }}
-      onLogout={jest.fn()}
+      onLogout={vi.fn()}
     />
   );
   expect(screen.queryByRole('button', { name: /audit/i })).not.toBeInTheDocument();
@@ -282,7 +282,7 @@ test('only the configured Katelyn account can open the audit panel', async () =>
   rerender(
     <Dashboard
       user={{ id: KATELYN_AUDIT_VIEWER_ID, username: 'Katelyn' }}
-      onLogout={jest.fn()}
+      onLogout={vi.fn()}
     />
   );
 

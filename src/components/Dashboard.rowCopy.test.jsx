@@ -18,7 +18,7 @@ describe('appointment row copy', () => {
   let writeText;
 
   beforeEach(() => {
-    writeText = jest.fn().mockResolvedValue(undefined);
+    writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText },

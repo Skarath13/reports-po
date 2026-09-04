@@ -233,7 +233,7 @@ function findDuplicateClients(allLocationAppointments) {
   // Find entries with 2+ appointments
   const duplicates = [];
 
-  Object.entries(phoneMap).forEach(([phone, apts]) => {
+  Object.values(phoneMap).forEach((apts) => {
     if (apts.length > 1) {
       // Get unique locations
       const locations = [...new Set(apts.map(a => a.locationName || a.locationId))];

@@ -3,9 +3,9 @@ import { render, screen, within } from '@testing-library/react';
 import ReportAuditPanel from './ReportAuditPanel';
 import api from '../api/client';
 
-jest.mock('../api/client', () => ({
+vi.mock('../api/client', () => ({
   __esModule: true,
-  default: { getAudit: jest.fn() },
+  default: { getAudit: vi.fn() },
 }));
 
 test('counts only section sign-offs that match the latest observed snapshot', async () => {
@@ -59,7 +59,7 @@ test('counts only section sign-offs that match the latest observed snapshot', as
   render(
     <ReportAuditPanel
       initialDate="2026-08-30"
-      onClose={jest.fn()}
+      onClose={vi.fn()}
       formatDateTime={(value) => value}
     />
   );

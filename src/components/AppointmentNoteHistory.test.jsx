@@ -67,7 +67,7 @@ test('starts with history collapsed and opens the most recent historical note on
 });
 
 test('keeps current notes visible and preserves historical selection when the dropdown is toggled', () => {
-  const onLoadMore = jest.fn();
+  const onLoadMore = vi.fn();
   render(
     <AppointmentNoteHistory
       currentCustomerNote="Current customer request"
@@ -120,7 +120,7 @@ test('each appointment has an independent history dropdown', () => {
 });
 
 test('loads older appointments in batches and preserves incomplete-coverage disclosure', async () => {
-  const onLoadMore = jest.fn().mockResolvedValue({
+  const onLoadMore = vi.fn().mockResolvedValue({
     appointments: [{
       id: 'past-6',
       appointmentTime: '2026-06-01T18:00:00.000Z',
@@ -170,7 +170,7 @@ test('loads older appointments in batches and preserves incomplete-coverage disc
 });
 
 test('keeps current notes visible after a history load failure and allows retrying the same page', async () => {
-  const onLoadMore = jest.fn()
+  const onLoadMore = vi.fn()
     .mockRejectedValueOnce(new Error('Could not load older appointment notes.'))
     .mockResolvedValueOnce({
       appointments: [{ ...initialAppointments[0], id: 'past-6', serviceName: 'Recovered Fill' }],

@@ -4,7 +4,7 @@ describe('ReportsAPIClient auth failures', () => {
   beforeEach(() => {
     api.setToken(null);
     localStorage.clear();
-    global.fetch = jest.fn();
+    global.fetch = vi.fn();
   });
 
   afterEach(() => {
@@ -13,7 +13,7 @@ describe('ReportsAPIClient auth failures', () => {
   });
 
   test('login 401 surfaces invalid credentials without auth-expired event', async () => {
-    const authExpired = jest.fn();
+    const authExpired = vi.fn();
     window.addEventListener('auth-expired', authExpired);
 
     global.fetch.mockResolvedValue({
@@ -34,7 +34,7 @@ describe('ReportsAPIClient auth failures', () => {
   });
 
   test('protected route 401 clears token and emits auth-expired event', async () => {
-    const authExpired = jest.fn();
+    const authExpired = vi.fn();
     window.addEventListener('auth-expired', authExpired);
     api.setToken('stale-token');
 

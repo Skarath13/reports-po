@@ -2,7 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import Dashboard from './Dashboard';
 
-jest.mock('../api/client', () => ({
+vi.mock('../api/client', () => ({
   __esModule: true,
   default: {
     getSectionReviews: () => Promise.resolve({ reviews: [], acknowledgements: [] }),
@@ -12,7 +12,7 @@ jest.mock('../api/client', () => ({
   },
 }));
 
-jest.mock('../hooks/useReports', () => ({
+vi.mock('../hooks/useReports', () => ({
   __esModule: true,
   LOCATIONS: [{
     id: 'tustin',
@@ -89,18 +89,18 @@ jest.mock('../hooks/useReports', () => ({
     loading: false,
     error: null,
     lastUpdated: null,
-    refresh: jest.fn(),
+    refresh: vi.fn(),
   }),
   useAllLocationAppointments: () => ({
     data: { date: '2026-08-30', appointments: [] },
     loading: false,
     error: null,
-    refresh: jest.fn(),
+    refresh: vi.fn(),
   }),
 }));
 
 test('keeps profile and current notes visible above anyone-available bookings with history collapsed', async () => {
-  render(<Dashboard user={{ id: 'ross-id', username: 'Ross' }} onLogout={jest.fn()} />);
+  render(<Dashboard user={{ id: 'ross-id', username: 'Ross' }} onLogout={vi.fn()} />);
 
   expect(await screen.findByRole('heading', { name: 'Client & Appointment Notes' })).toBeInTheDocument();
   expect(screen.getByText('Client profile')).toBeInTheDocument();
@@ -114,13 +114,13 @@ test('keeps profile and current notes visible above anyone-available bookings wi
   const anyoneHeading = screen.getByRole('heading', { name: 'Clients Booked for Anyone Available' });
   expect(notesHeading.compareDocumentPosition(anyoneHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-  fireEvent.click(screen.getByRole('button', { name: /Past appointments 1 past appointment/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Past appointments\s*1 past appointment/ }));
   expect(screen.getByText('Historic business detail')).toBeVisible();
   expect(screen.getByText('Current appointment request')).toBeVisible();
 });
 
 test('uses a date-neutral current-note heading for tomorrow\'s report', async () => {
-  render(<Dashboard user={{ id: 'ross-id', username: 'Ross' }} onLogout={jest.fn()} />);
+  render(<Dashboard user={{ id: 'ross-id', username: 'Ross' }} onLogout={vi.fn()} />);
   expect(await screen.findByText('Current appointment request')).toBeVisible();
   expect(screen.getAllByRole('heading', { name: "Today's appointment notes" })).toHaveLength(3);
 

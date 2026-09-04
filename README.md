@@ -8,12 +8,22 @@ The Express `/api/reports` backend remains in the checkin repo/VPS. This project
 
 ```bash
 npm ci
-npm test -- --watchAll=false
+npm start
+npm test
+npm run lint
 npm run build
 npm run test:cloudflare-shell
 npm run cf:dry-run
 npm run cf:deploy
 ```
+
+The React client uses Vite, Tailwind CSS, and Vitest. Use Node 22.12+ (or Node 24+).
+`npm run test:watch` starts the interactive test runner. Source files with JSX use
+the `.jsx` extension; this is still a JavaScript app, with no separate typecheck.
+
+Vite preserves the Worker's `build/` asset directory and the existing build metadata
+script. The API defaults to `/api/reports`; the optional public `REACT_APP_API_URL`
+build variable is preserved. Only that variable is exposed to the browser.
 
 ## Cloudflare
 
@@ -60,4 +70,6 @@ Runtime dependency audit:
 npm audit --omit=dev
 ```
 
-The runtime audit is clean. The full `npm audit` still reports moderate CRA/react-scripts development-tooling advisories under Jest, SVGO/js-yaml, and webpack-dev-server. Do not run `npm audit fix --force`; npm proposes `react-scripts@0.0.0`, which would break the app instead of upgrading CRA.
+The Create React App toolchain has been replaced by Vite. Run the audit against
+the current lockfile; do not apply forced dependency upgrades without checking
+peer compatibility and rerunning the frontend and Worker suites.

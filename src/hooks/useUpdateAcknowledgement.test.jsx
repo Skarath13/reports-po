@@ -8,40 +8,40 @@ function UpdateTarget({ active = true, onSeen }) {
 }
 
 beforeEach(() => {
-  jest.useFakeTimers();
+  vi.useFakeTimers();
 });
 
 afterEach(() => {
-  jest.runOnlyPendingTimers();
-  jest.useRealTimers();
+  vi.runOnlyPendingTimers();
+  vi.useRealTimers();
 });
 
 test('requires a brief pointer dwell before acknowledging a hover', () => {
-  const onSeen = jest.fn();
+  const onSeen = vi.fn();
   render(<UpdateTarget onSeen={onSeen} />);
 
   fireEvent.pointerEnter(screen.getByTestId('target'), { pointerType: 'mouse' });
-  act(() => jest.advanceTimersByTime(_private.HOVER_ACKNOWLEDGEMENT_DELAY_MS - 1));
+  act(() => vi.advanceTimersByTime(_private.HOVER_ACKNOWLEDGEMENT_DELAY_MS - 1));
   expect(onSeen).not.toHaveBeenCalled();
 
-  act(() => jest.advanceTimersByTime(1));
+  act(() => vi.advanceTimersByTime(1));
   expect(onSeen).toHaveBeenCalledTimes(1);
 });
 
 test('pointer leave cancels hover acknowledgement and touch waits for a click', () => {
-  const onSeen = jest.fn();
+  const onSeen = vi.fn();
   render(<UpdateTarget onSeen={onSeen} />);
   const target = screen.getByTestId('target');
 
   fireEvent.pointerEnter(target, { pointerType: 'mouse' });
   fireEvent.pointerLeave(target);
-  act(() => jest.advanceTimersByTime(_private.HOVER_ACKNOWLEDGEMENT_DELAY_MS));
+  act(() => vi.advanceTimersByTime(_private.HOVER_ACKNOWLEDGEMENT_DELAY_MS));
   expect(onSeen).not.toHaveBeenCalled();
 
   const touchPointerEvent = new Event('pointerover', { bubbles: true });
   Object.defineProperty(touchPointerEvent, 'pointerType', { value: 'touch' });
   fireEvent(target, touchPointerEvent);
-  act(() => jest.advanceTimersByTime(_private.HOVER_ACKNOWLEDGEMENT_DELAY_MS));
+  act(() => vi.advanceTimersByTime(_private.HOVER_ACKNOWLEDGEMENT_DELAY_MS));
   expect(onSeen).not.toHaveBeenCalled();
 
   fireEvent.click(target);
