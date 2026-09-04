@@ -35,9 +35,11 @@ function getFreshCachedData(locationId, date, viewerId) {
 
 // Hook for fetching a single location's full report with caching
 export function useFullReport(locationId, date, viewerId) {
+  const contextKey = `${locationId || ''}|${date || ''}|${viewerId || ''}`;
   // Cached report contents are not rendered until the governance view event is
   // confirmed. This keeps a D1 outage from bypassing the audited-view gate.
   const [data, setData] = useState(null);
+  const [dataContext, setDataContext] = useState('');
   const [loading, setLoading] = useState(Boolean(locationId && date));
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -71,6 +73,9 @@ export function useFullReport(locationId, date, viewerId) {
   }, [locationId, date, viewerId]);
 
   const fetchReport = useCallback(async (forceRefresh = false) => {
+    // Invalidate an older fetch even when the next location is served from cache.
+    const currentRequestId = ++requestIdRef.current;
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     if (!locationId || !date) {
       setLoading(false);
       return;
@@ -85,6 +90,7 @@ export function useFullReport(locationId, date, viewerId) {
         // The original full-report request already records this view. Cache
         // hits do not create a new audited action.
         setData(cached.data);
+        setDataContext(`${locationId || ''}|${date || ''}|${viewerId || ''}`);
         setLastUpdated(new Date(cached.timestamp));
         setError(null);
         setLoading(false);
@@ -92,14 +98,8 @@ export function useFullReport(locationId, date, viewerId) {
       }
     }
 
-    // Cancel any in-flight request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
     // Create new abort controller
     abortControllerRef.current = new AbortController();
-    const currentRequestId = ++requestIdRef.current;
 
     setLoading(true);
     setError(null);
@@ -120,6 +120,7 @@ export function useFullReport(locationId, date, viewerId) {
         });
 
         setData(report);
+        setDataContext(`${locationId || ''}|${date || ''}|${viewerId || ''}`);
         setLastUpdated(new Date(now));
       }
     } catch (err) {
@@ -153,10 +154,10 @@ export function useFullReport(locationId, date, viewerId) {
   }, [fetchReport]);
 
   return {
-    data,
-    loading,
+    data: dataContext === contextKey ? data : null,
+    loading: loading || (Boolean(locationId && date) && !error && dataContext !== contextKey),
     error,
-    lastUpdated,
+    lastUpdated: dataContext === contextKey ? lastUpdated : null,
     refresh: () => fetchReport(true),
   };
 }

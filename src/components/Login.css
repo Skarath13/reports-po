@@ -48,8 +48,8 @@
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: #3d3d46;
-  border: 1px solid #62626d;
+  background: var(--surface-raised);
+  border: 1px solid var(--input);
   transition: background 0.15s;
 }
 .pin-dot.filled {
@@ -65,7 +65,7 @@
   display: grid;
   place-items: center;
   height: 60px;
-  border: 1px solid #474752;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   background: #202024;
   color: var(--foreground);
@@ -74,11 +74,11 @@
   transition: background 0.12s;
 }
 .pin-button:hover:not(:disabled) {
-  background: #303037;
-  border-color: #787888;
+  background: var(--surface-hover);
+  border-color: var(--input);
 }
 .pin-button:active {
-  background: #3e354f;
+  background: var(--selection-background);
 }
 .pin-button.secondary {
   color: var(--muted-foreground);
@@ -88,8 +88,8 @@
 }
 .error-message {
   color: var(--destructive);
-  background: #2c2024;
-  border: 1px solid #5c3b43;
+  background: var(--destructive-background);
+  border: 1px solid var(--destructive-border);
   padding: 10px;
   border-radius: 7px;
   font-size: 11px;

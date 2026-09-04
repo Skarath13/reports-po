@@ -15,6 +15,7 @@ const fixture = vi.hoisted(() => ({
     getAppointmentNoteHistory: vi.fn(),
   },
   report: null,
+  loading: false,
 }));
 vi.mock('../api/client', () => ({ default: fixture.api }));
 vi.mock('../hooks/useReports', () => ({
@@ -24,7 +25,7 @@ vi.mock('../hooks/useReports', () => ({
   ],
   useFullReport: () => ({
     data: fixture.report,
-    loading: false,
+    loading: fixture.loading,
     error: null,
     refresh: vi.fn(),
   }),
@@ -48,6 +49,7 @@ vi.mock('../hooks/useReports', () => ({
 beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
+  fixture.loading = false;
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
   const appointments = [
     {
@@ -135,6 +137,10 @@ const schedule = () => screen.getByRole('table', { name: 'Appointments' });
 test('sorts and filters the schedule without changing the report totals or searching hidden names', async () => {
   mount();
   await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  expect(
+    screen.getByRole('button', { name: 'By technician' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
   expect(within(schedule()).getAllByRole('row')[1]).toHaveTextContent(
     '9:00 AM',
   );
@@ -147,15 +153,17 @@ test('sorts and filters the schedule without changing the report totals or searc
   });
   expect(screen.getByText('No matching appointments')).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Show Names' }));
-  expect(screen.getByRole('textbox', { name: 'Search schedule' })).toHaveValue(
-    '',
-  );
+  expect(
+    screen.getByRole('textbox', { name: 'Search schedule' }),
+  ).toHaveValue('');
   fireEvent.change(screen.getByRole('textbox', { name: 'Search schedule' }), {
     target: { value: 'Avery' },
   });
   expect(within(schedule()).getAllByRole('row')).toHaveLength(2);
   expect(within(schedule()).getByText('Avery Chen')).toBeVisible();
-  expect(screen.getByText('1 of 2 appointments · filtered view')).toBeVisible();
+  expect(
+    screen.getByText('1 of 2 appointments · filtered view'),
+  ).toBeVisible();
   expect(screen.getByLabelText('Report summary')).toHaveTextContent(
     'Appointments2',
   );
@@ -233,8 +241,12 @@ test('navigation keeps each review section separate and location/date changes cl
     screen.getByRole('combobox', { name: 'Filter by technician' }),
     { target: { value: 'Alice' } },
   );
-  expect(screen.getByText('1 of 2 appointments · filtered view')).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: 'Irvine', exact: true }));
+  expect(
+    screen.getByText('1 of 2 appointments · filtered view'),
+  ).toBeVisible();
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Irvine', exact: true }),
+  );
   expect(
     screen.getByRole('combobox', { name: 'Filter by technician' }),
   ).toHaveValue('all');
@@ -244,11 +256,13 @@ test('navigation keeps each review section separate and location/date changes cl
   fireEvent.click(
     screen.getByRole('button', { name: 'Tomorrow', exact: true }),
   );
-  expect(screen.getByRole('textbox', { name: 'Search schedule' })).toHaveValue(
-    '',
-  );
   expect(
-    await screen.findByRole('button', { name: 'Sign off Calendar List View' }),
+    screen.getByRole('textbox', { name: 'Search schedule' }),
+  ).toHaveValue('');
+  expect(
+    await screen.findByRole('button', {
+      name: 'Sign off Calendar List View',
+    }),
   ).toBeDisabled();
 });
 
@@ -323,4 +337,150 @@ test('copies only the shown technician appointments and reports clipboard failur
       name: 'Copy failed for Chloe schedule',
     }),
   ).toBeVisible();
+});
+
+test('restores layout, sorting, filters, visibility, section, date and theme only for the same user', async () => {
+  const first = mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Show Names' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Hide Prices' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Time', exact: true }));
+  fireEvent.click(screen.getByRole('switch', { name: 'Light mode' }));
+  fireEvent.change(
+    screen.getByRole('combobox', { name: 'Filter by technician' }),
+    { target: { value: 'Alice' } },
+  );
+  fireEvent.click(screen.getByRole('button', { name: /Schedule\s*2/ }));
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Tomorrow', exact: true }),
+  );
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search schedule' }), {
+    target: { value: 'Avery' },
+  });
+  first.unmount();
+  const second = mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  expect(
+    screen.getByRole('heading', { level: 1, name: 'Schedule' }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole('button', { name: 'Tomorrow', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  expect(
+    screen.getByRole('button', { name: 'List', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: 'Hide Names' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Show Prices' })).toBeVisible();
+  expect(
+    screen.getByRole('combobox', { name: 'Filter by technician' }),
+  ).toHaveValue('Alice');
+  expect(screen.getByRole('columnheader', { name: 'Time' })).toHaveAttribute(
+    'aria-sort',
+    'descending',
+  );
+  expect(
+    screen.getByRole('textbox', { name: 'Search schedule' }),
+  ).toHaveValue('');
+  expect(document.documentElement.dataset.theme).toBe('light');
+  second.rerender(
+    <Dashboard
+      user={{ id: 'other-id', username: 'Viewer' }}
+      onLogout={vi.fn()}
+    />,
+  );
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  expect(
+    screen.getByRole('button', { name: 'By technician' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: 'Show Names' })).toBeVisible();
+  expect(
+    screen.getByRole('button', { name: 'Today', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  expect(document.documentElement.dataset.theme).toBe('dark');
+  second.rerender(
+    <Dashboard
+      user={{ id: 'viewer', username: 'Renamed' }}
+      onLogout={vi.fn()}
+    />,
+  );
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  expect(screen.getByRole('button', { name: 'Hide Names' })).toBeVisible();
+  expect(document.documentElement.dataset.theme).toBe('light');
+});
+
+test('sidebar update dots persist across a reload and opening a section does not submit a review', async () => {
+  const first = mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  expect(
+    screen.queryByRole('img', { name: 'Updates in Schedule' }),
+  ).not.toBeInTheDocument();
+  fixture.report = {
+    ...fixture.report,
+    _governance: {
+      sectionSnapshots: {
+        ...fixture.report._governance.sectionSnapshots,
+        calendar: { snapshotHash: 'calendar-changed', entries: [] },
+      },
+    },
+  };
+  first.rerender(
+    <Dashboard
+      user={{ id: 'viewer', username: 'Viewer' }}
+      onLogout={vi.fn()}
+    />,
+  );
+  expect(
+    await screen.findByRole('img', { name: 'Updates in Schedule' }),
+  ).toBeVisible();
+  first.unmount();
+  mount();
+  expect(
+    await screen.findByRole('img', { name: 'Updates in Schedule' }),
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: /1 section updated/ }));
+  expect(
+    screen.getByRole('heading', { level: 1, name: 'Schedule' }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole('img', { name: 'Updates in Schedule' }),
+  ).not.toBeInTheDocument();
+  expect(fixture.api.submitSectionSignoff).not.toHaveBeenCalled();
+  expect(fixture.api.acknowledgeSectionEntry).not.toHaveBeenCalled();
+});
+
+test('keeps the schedule and draft search in place during refresh while disabling sign-off', async () => {
+  const { rerender } = mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search schedule' }), {
+    target: { value: 'Natural' },
+  });
+  fixture.loading = true;
+  rerender(
+    <Dashboard
+      user={{ id: 'viewer', username: 'Viewer' }}
+      onLogout={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByRole('textbox', { name: 'Search schedule' }),
+  ).toHaveValue('Natural');
+  expect(
+    screen.queryByRole('button', { name: 'Sign off Calendar List View' }),
+  ).not.toBeInTheDocument();
+  fixture.loading = false;
+  rerender(
+    <Dashboard
+      user={{ id: 'viewer', username: 'Viewer' }}
+      onLogout={vi.fn()}
+    />,
+  );
+  expect(
+    await screen.findByRole('button', {
+      name: 'Sign off Calendar List View',
+    }),
+  ).toBeEnabled();
+  expect(
+    screen.getByRole('textbox', { name: 'Search schedule' }),
+  ).toHaveValue('Natural');
 });

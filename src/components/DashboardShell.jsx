@@ -11,7 +11,8 @@ import {
   Menu,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
+  Bell,
+  Moon,
   StickyNote,
   Sun,
   Users,
@@ -19,7 +20,12 @@ import {
   Copy,
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { Sheet, SheetContent, SheetTitle, SheetDescription } from './ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from './ui/sheet';
 
 const navigation = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -46,6 +52,9 @@ export default function DashboardShell({
   onRefresh,
   activeSection,
   onSectionChange,
+  theme,
+  onThemeChange,
+  unreadSections = [],
   counts,
   sectionStates,
   reviewCount,
@@ -76,68 +85,112 @@ export default function DashboardShell({
           navigate('overview');
         }}
       >
-        <span className="brand-mark">
-          <Sparkles size={20} />
-        </span>
-        <span>
-          <strong>Elegant Lashes</strong>
-          <small>Reports workspace</small>
-        </span>
+        <img
+          className="workspace-logo"
+          src="/brand/elegant-lashes-by-katie.webp"
+          width="284"
+          height="97"
+          alt="Elegant Lashes by Katie"
+        />
       </a>
-      <div className="sidebar-label">Workspace</div>
-      <nav className="workspace-navigation" aria-label="Report sections">
-        {navigation.map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            className={`nav-item ${activeSection === key ? 'active' : ''}`}
-            aria-current={activeSection === key ? 'page' : undefined}
-            onClick={() => navigate(key)}
-          >
-            <Icon size={17} />
-            <span>{label}</span>
-            {sectionStates[key]?.ready &&
-            sectionStates[key]?.signedOff &&
-            sectionStates[key]?.changedCount === 0 &&
-            reviewStatus === 'ready' ? (
-              <Check
-                size={13}
-                className="nav-reviewed"
-                aria-label="Review current"
-              />
-            ) : (
-              counts[key] != null && (
-                <span className="nav-count">{counts[key]}</span>
-              )
-            )}
-          </button>
-        ))}
-      </nav>
-      <div className="sidebar-review">
-        <ClipboardCheck size={17} />
-        <span>
-          Section reviews
-          <strong>
-            {reviewStatus === 'ready'
-              ? `${reviewCount} of 6 complete`
-              : reviewStatus === 'error'
-                ? 'Status unavailable'
-                : 'Preparing status…'}
-          </strong>
-        </span>
-        <div className="review-meter" aria-hidden="true">
-          <span
-            style={{
-              width: `${reviewStatus === 'ready' ? (reviewCount / 6) * 100 : 0}%`,
-            }}
-          />
+      <div className="sidebar-body">
+        <div className="sidebar-label">Workspace</div>
+        <nav className="workspace-navigation" aria-label="Report sections">
+          {navigation.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              className={`nav-item ${activeSection === key ? 'active' : ''}`}
+              aria-current={activeSection === key ? 'page' : undefined}
+              onClick={() => navigate(key)}
+            >
+              <Icon size={17} />
+              <span>{label}</span>
+              {unreadSections.includes(key) && (
+                <span
+                  className="nav-update-dot"
+                  role="img"
+                  aria-label={`Updates in ${label}`}
+                  title="Updated since you last opened this section"
+                />
+              )}
+              {sectionStates[key]?.ready &&
+              sectionStates[key]?.signedOff &&
+              sectionStates[key]?.changedCount === 0 &&
+              reviewStatus === 'ready' ? (
+                <Check
+                  size={13}
+                  className="nav-reviewed"
+                  aria-label="Review current"
+                />
+              ) : (
+                counts[key] != null && (
+                  <span className="nav-count">{counts[key]}</span>
+                )
+              )}
+            </button>
+          ))}
+        </nav>
+        <div
+          className="sidebar-updates"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {unreadSections.length > 0 && (
+            <button onClick={() => navigate(unreadSections[0])}>
+              <Bell size={16} />
+              <span>
+                <strong>
+                  {unreadSections.length}{' '}
+                  {unreadSections.length === 1
+                    ? 'section updated'
+                    : 'sections updated'}
+                </strong>
+                <small>View updates</small>
+              </span>
+              <ChevronRight size={14} />
+            </button>
+          )}
         </div>
-        <small>
-          {isToday
-            ? 'For this location · today'
-            : 'Tomorrow opens for sign-off on the day'}
-        </small>
+        <div className="sidebar-review">
+          <ClipboardCheck size={17} />
+          <span>
+            Section reviews
+            <strong>
+              {reviewStatus === 'ready'
+                ? `${reviewCount} of 6 complete`
+                : reviewStatus === 'error'
+                  ? 'Status unavailable'
+                  : 'Preparing status…'}
+            </strong>
+          </span>
+          <div className="review-meter" aria-hidden="true">
+            <span
+              style={{
+                width: `${reviewStatus === 'ready' ? (reviewCount / 6) * 100 : 0}%`,
+              }}
+            />
+          </div>
+          <small>
+            {isToday
+              ? 'For this location · today'
+              : 'Tomorrow opens for sign-off on the day'}
+          </small>
+        </div>
       </div>
       <div className="sidebar-footer">
+        <button
+          className="sidebar-theme-toggle"
+          role="switch"
+          aria-checked={theme === 'light'}
+          aria-label="Light mode"
+          onClick={() => onThemeChange(theme === 'light' ? 'dark' : 'light')}
+        >
+          {theme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
+          <span>Light mode</span>
+          <span className="theme-switch-track" aria-hidden="true">
+            <span />
+          </span>
+        </button>
         <a href="/monitoring" target="_blank" rel="noopener noreferrer">
           <Activity size={16} />
           System status
@@ -199,9 +252,24 @@ export default function DashboardShell({
               size="icon"
               className="mobile-menu"
               onClick={() => setMenuOpen(true)}
-              aria-label="Open navigation"
+              aria-label={
+                unreadSections.length
+                  ? `Open navigation, ${unreadSections.length} sections updated`
+                  : 'Open navigation'
+              }
             >
               <Menu />
+              {unreadSections.length > 0 && (
+                <span
+                  className="mobile-update-dot nav-update-dot"
+                  aria-hidden="true"
+                />
+              )}
+              {unreadSections.length > 0 && (
+                <span className="sr-only">
+                  {unreadSections.length} sections updated
+                </span>
+              )}
             </Button>
             <span>Reports</span>
             <ChevronRight size={13} />
@@ -211,7 +279,11 @@ export default function DashboardShell({
             <span className="header-sync">
               {syncLabel ? `Synced ${syncLabel} PT` : 'Awaiting report'}
             </span>
-            <Button variant="outline" onClick={onRefresh} disabled={refreshing}>
+            <Button
+              variant="outline"
+              onClick={onRefresh}
+              disabled={refreshing}
+            >
               <RefreshCw size={15} className={refreshing ? 'spinning' : ''} />
               <span>{refreshing ? 'Refreshing' : 'Refresh'}</span>
             </Button>
@@ -229,7 +301,8 @@ export default function DashboardShell({
             <h1 ref={headingRef} tabIndex={-1}>
               {activeSection === 'overview'
                 ? 'Daily overview'
-                : navigation.find((item) => item.key === activeSection)?.label}
+                : navigation.find((item) => item.key === activeSection)
+                    ?.label}
             </h1>
             <p>
               {dateLabel}
@@ -261,6 +334,9 @@ export default function DashboardShell({
               aria-pressed={location?.id === item.id}
               onClick={() => onLocationChange(item.id)}
             >
+              <span className="location-selected-icon" aria-hidden="true">
+                {location?.id === item.id ? <Check size={14} /> : <span />}
+              </span>
               {item.name}
             </button>
           ))}

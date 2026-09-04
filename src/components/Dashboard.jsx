@@ -13,6 +13,11 @@ import {
 import { useSectionReviews } from '../hooks/useSectionReviews';
 import { useUpdateAcknowledgement } from '../hooks/useUpdateAcknowledgement';
 import {
+  dashboardUserKey,
+  useDashboardPreferences,
+} from '../hooks/useDashboardPreferences';
+import { useReportUpdates } from '../hooks/useReportUpdates';
+import {
   Copy,
   Check,
   Eye,
@@ -191,7 +196,10 @@ function abbreviateService(name) {
       '🎀  HOLIDAY PROMO 🎄🌟 $75 Natural Set For New and Returning Customers',
       '🎀 HOLIDAY PROMO $75',
     )
-    .replace('(NEW CLIENT PROMO) Natural Wet Set $75 ⚡️', '⚡️ NEW CLIENT $75')
+    .replace(
+      '(NEW CLIENT PROMO) Natural Wet Set $75 ⚡️',
+      '⚡️ NEW CLIENT $75',
+    )
     .replace('(NEW CLIENT PROMO) Natural Set $75 🌿', '🌿 NEW CLIENT $75')
     .replace(
       'Full Set of Lash Extensions (Consultation Recommended)',
@@ -247,16 +255,13 @@ function formatPacificDateTime(isoString) {
   });
 }
 
-// Get likelihood color - vibrant colors for dots
+// Keep the existing score bands legible in both themes.
 function getLikelihoodStyle(likelihood) {
-  if (likelihood >= 50)
-    return { bg: '#fecaca', text: '#991b1b', dot: '#ef4444' }; // Bright red
-  if (likelihood >= 30)
-    return { bg: '#fed7aa', text: '#9a3412', dot: '#f97316' }; // Bright orange
-  if (likelihood >= 15)
-    return { bg: '#fef08a', text: '#854d0e', dot: '#eab308' }; // Bright yellow
-  if (likelihood > 0) return { bg: '#d9f99d', text: '#3f6212', dot: '#22c55e' }; // Bright green
-  return { bg: 'transparent', text: '#6b7280', dot: '#9ca3af' };
+  if (likelihood >= 50) return { dot: 'var(--destructive)' };
+  if (likelihood >= 30) return { dot: 'var(--days-two-months-text)' };
+  if (likelihood >= 15) return { dot: 'var(--attention)' };
+  if (likelihood > 0) return { dot: 'var(--positive)' };
+  return { dot: 'var(--muted-foreground)' };
 }
 
 // Find duplicate clients (same phone appearing multiple times - across all locations)
@@ -351,87 +356,39 @@ function getStaffSnapshotEntry(snapshot, technicianName) {
 }
 
 function Dashboard({ user, onLogout }) {
-  // Get saved location from localStorage (per user)
-  const getStoredLocation = () => {
-    try {
-      const key = `reports_location_${user?.username || 'default'}`;
-      const stored = localStorage.getItem(key);
-      if (stored && LOCATIONS.some((l) => l.id === stored)) {
-        return stored;
-      }
-    } catch (e) {
-      // localStorage not available
-    }
-    return 'tustin';
-  };
+  return (
+    <DashboardWorkspace
+      key={dashboardUserKey(user) || 'anonymous'}
+      user={user}
+      onLogout={onLogout}
+    />
+  );
+}
 
-  // Get saved hideNames preference from localStorage (default: true for privacy)
-  const getStoredHideNames = () => {
-    try {
-      const key = `reports_hideNames_${user?.username || 'default'}`;
-      const stored = localStorage.getItem(key);
-      if (stored !== null) {
-        return stored === 'true';
-      }
-    } catch (e) {
-      // localStorage not available
-    }
-    return true; // Default to hidden for privacy
-  };
-
-  // Get saved price preference from localStorage (default: true for manager utility)
-  const getStoredShowPrices = () => {
-    try {
-      const key = `reports_showPrices_${user?.username || 'default'}`;
-      const stored = localStorage.getItem(key);
-      if (stored !== null) {
-        return stored === 'true';
-      }
-    } catch (e) {
-      // localStorage not available
-    }
-    return true;
-  };
-
-  const [selectedLocation, setSelectedLocation] = useState(getStoredLocation);
-  const [selectedDate, setSelectedDate] = useState(getTodayPST());
-  const [hideNames, setHideNames] = useState(getStoredHideNames);
-  const [showPrices, setShowPrices] = useState(getStoredShowPrices);
+function DashboardWorkspace({ user, onLogout }) {
+  const [preferences, updatePreferences] = useDashboardPreferences(user);
+  const {
+    location: selectedLocation,
+    hideNames,
+    showPrices,
+    activeSection,
+  } = preferences;
+  const selectedDate =
+    preferences.dateMode === 'tomorrow' ? getTomorrowPST() : getTodayPST();
+  const setSelectedLocation = (location) => updatePreferences({ location });
+  const setHideNames = (next) =>
+    updatePreferences((current) => ({
+      hideNames: typeof next === 'function' ? next(current.hideNames) : next,
+    }));
+  const setShowPrices = (next) =>
+    updatePreferences((current) => ({
+      showPrices:
+        typeof next === 'function' ? next(current.showPrices) : next,
+    }));
   const [showAudit, setShowAudit] = useState(false);
-  const [activeSection, setActiveSection] = useState('overview');
   const [detailSelection, setDetailSelection] = useState(null);
   const detailTriggerRef = useRef(null);
-  const reportContext = `${user?.id}:${selectedLocation}:${selectedDate}`;
-
-  // Save location to localStorage when it changes
-  useEffect(() => {
-    try {
-      const key = `reports_location_${user?.username || 'default'}`;
-      localStorage.setItem(key, selectedLocation);
-    } catch (e) {
-      // localStorage not available
-    }
-  }, [selectedLocation, user?.username]);
-
-  // Save hideNames preference to localStorage when it changes
-  useEffect(() => {
-    try {
-      const key = `reports_hideNames_${user?.username || 'default'}`;
-      localStorage.setItem(key, String(hideNames));
-    } catch (e) {
-      // localStorage not available
-    }
-  }, [hideNames, user?.username]);
-
-  // Save showPrices preference to localStorage when it changes
-  useEffect(() => {
-    try {
-      const key = `reports_showPrices_${user?.username || 'default'}`;
-      localStorage.setItem(key, String(showPrices));
-    } catch (e) {
-      // localStorage not available
-    }
-  }, [showPrices, user?.username]);
+  const reportContext = `${dashboardUserKey(user)}:${selectedLocation}:${selectedDate}`;
 
   const isToday = selectedDate === getTodayPST();
 
@@ -494,14 +451,16 @@ function Dashboard({ user, onLogout }) {
     () =>
       report?.technicians
         ?.filter((technician) => {
-          const technicianAppointments = report.byTechnician[technician] || [];
+          const technicianAppointments =
+            report.byTechnician[technician] || [];
           const hasFirstHour = technicianAppointments.some(
             (appointment) => getHourPST(appointment.appointmentTime) === 9,
           );
           return !hasFirstHour && technicianAppointments.length > 0;
         })
         .map((technician) => {
-          const technicianAppointments = report.byTechnician[technician] || [];
+          const technicianAppointments =
+            report.byTechnician[technician] || [];
           const firstAppointment = [...technicianAppointments].sort(
             (left, right) =>
               new Date(left?.appointmentTime || 0) -
@@ -543,11 +502,21 @@ function Dashboard({ user, onLogout }) {
       : null;
   const sectionSnapshots = useMemo(
     () => ({
-      ...(report?._governance?.sectionSnapshots || {}),
+      ...(!loading && !error ? report?._governance?.sectionSnapshots : {}),
       duplicates: duplicateSnapshot,
     }),
-    [duplicateSnapshot, report],
+    [duplicateSnapshot, error, loading, report],
   );
+
+  const { unreadSections, markSeen } = useReportUpdates({
+    userKey: dashboardUserKey(user),
+    date: selectedDate,
+    locationId: selectedLocation,
+    snapshots: {
+      ...(!loading && !error ? report?._governance?.sectionSnapshots : {}),
+      duplicates: duplicateSnapshot,
+    },
+  });
 
   const refreshReviewSources = useCallback(() => {
     refresh();
@@ -626,8 +595,8 @@ function Dashboard({ user, onLogout }) {
           'staff-first-hour': staffMissingFirstHour.length,
         };
 
-  // Show skeleton whenever loading (better UX than overlay)
-  const showSkeleton = loading;
+  // Keep the current workspace and its draft search visible during a refresh.
+  const showSkeleton = loading && !report;
 
   return (
     <DashboardShell
@@ -638,8 +607,8 @@ function Dashboard({ user, onLogout }) {
       onLocationChange={setSelectedLocation}
       dateLabel={formatDate(selectedDate)}
       isToday={isToday}
-      onToday={() => setSelectedDate(getTodayPST())}
-      onTomorrow={() => setSelectedDate(getTomorrowPST())}
+      onToday={() => updatePreferences({ dateMode: 'today' })}
+      onTomorrow={() => updatePreferences({ dateMode: 'tomorrow' })}
       syncLabel={
         report?.generatedAt ? formatGeneratedTime(report.generatedAt) : null
       }
@@ -647,9 +616,13 @@ function Dashboard({ user, onLogout }) {
       onRefresh={refreshReviewSources}
       activeSection={activeSection}
       onSectionChange={(section) => {
-        setActiveSection(section);
+        updatePreferences({ activeSection: section });
+        markSeen(section);
         setShowAudit(false);
       }}
+      theme={preferences.theme}
+      onThemeChange={(theme) => updatePreferences({ theme })}
+      unreadSections={unreadSections}
       counts={navCounts}
       sectionStates={sectionStates}
       reviewCount={reviewCount}
@@ -785,6 +758,30 @@ function Dashboard({ user, onLogout }) {
                 key={`${reportContext}:${hideNames}`}
                 appointments={scheduleAppointments}
                 hideNames={hideNames}
+                view={preferences.scheduleView}
+                onViewChange={(scheduleView) =>
+                  updatePreferences({ scheduleView })
+                }
+                sorting={preferences.sorting}
+                onSortingChange={(next) =>
+                  updatePreferences((current) => ({
+                    sorting:
+                      typeof next === 'function'
+                        ? next(current.sorting)
+                        : next,
+                  }))
+                }
+                technician={
+                  preferences.technicians[selectedLocation] || 'all'
+                }
+                onTechnicianChange={(technician) =>
+                  updatePreferences((current) => ({
+                    technicians: {
+                      ...current.technicians,
+                      [selectedLocation]: technician,
+                    },
+                  }))
+                }
                 renderRow={(appointment) => {
                   const entry = getAppointmentSnapshotEntry(
                     sectionSnapshots.calendar,
@@ -841,7 +838,9 @@ function Dashboard({ user, onLogout }) {
                 )}
               />
             ) : (
-              <SectionEmptyState>No appointments scheduled.</SectionEmptyState>
+              <SectionEmptyState>
+                No appointments scheduled.
+              </SectionEmptyState>
             )}
           </section>
 
@@ -943,7 +942,9 @@ function Dashboard({ user, onLogout }) {
                 })}
               </div>
             ) : (
-              <SectionEmptyState>No potential booking fixes.</SectionEmptyState>
+              <SectionEmptyState>
+                No potential booking fixes.
+              </SectionEmptyState>
             )}
           </section>
 
@@ -963,7 +964,8 @@ function Dashboard({ user, onLogout }) {
             />
             {allLocationError ? (
               <SectionEmptyState>
-                Cross-location duplicate check is unavailable. Refresh to retry.
+                Cross-location duplicate check is unavailable. Refresh to
+                retry.
               </SectionEmptyState>
             ) : allLocationLoading ||
               !allLocationData ||
@@ -993,7 +995,9 @@ function Dashboard({ user, onLogout }) {
                       service={abbreviateService(
                         duplicate.appointments[0]?.serviceName,
                       )}
-                      days={duplicate.appointments[0]?.daysSinceLastAppointment}
+                      days={
+                        duplicate.appointments[0]?.daysSinceLastAppointment
+                      }
                       technician={cleanTechName(
                         duplicate.appointments[0]?.technicianName,
                       )}
@@ -1003,7 +1007,9 @@ function Dashboard({ user, onLogout }) {
                             entry.entryKey,
                           ),
                       )}
-                      onUpdateSeen={() => acknowledgeEntry('duplicates', entry)}
+                      onUpdateSeen={() =>
+                        acknowledgeEntry('duplicates', entry)
+                      }
                     >
                       <div className="dup-summary">
                         {duplicate.appointments.length} appts @{' '}
@@ -1036,7 +1042,9 @@ function Dashboard({ user, onLogout }) {
                 })}
               </div>
             ) : (
-              <SectionEmptyState>No duplicate clients found.</SectionEmptyState>
+              <SectionEmptyState>
+                No duplicate clients found.
+              </SectionEmptyState>
             )}
           </section>
 
@@ -1073,9 +1081,9 @@ function Dashboard({ user, onLogout }) {
                       technicianLabel="Assigned"
                       isUpdated={Boolean(
                         entry &&
-                          sectionStates['anyone-available']?.unseenEntries.has(
-                            entry.entryKey,
-                          ),
+                          sectionStates[
+                            'anyone-available'
+                          ]?.unseenEntries.has(entry.entryKey),
                       )}
                       onUpdateSeen={() =>
                         acknowledgeEntry('anyone-available', entry)
@@ -1118,9 +1126,9 @@ function Dashboard({ user, onLogout }) {
                       staff={staff}
                       isUpdated={Boolean(
                         entry &&
-                          sectionStates['staff-first-hour']?.unseenEntries.has(
-                            entry.entryKey,
-                          ),
+                          sectionStates[
+                            'staff-first-hour'
+                          ]?.unseenEntries.has(entry.entryKey),
                       )}
                       onUpdateSeen={() =>
                         acknowledgeEntry('staff-first-hour', entry)
@@ -1140,10 +1148,12 @@ function Dashboard({ user, onLogout }) {
           <footer className="report-footer">
             <div className="footer-stats">
               <div className="stat">
-                Total Appointments: <strong>{report.totalAppointments}</strong>
+                Total Appointments:{' '}
+                <strong>{report.totalAppointments}</strong>
               </div>
               <div className="stat">
-                Technicians: <strong>{report.technicians?.length || 0}</strong>
+                Technicians:{' '}
+                <strong>{report.technicians?.length || 0}</strong>
               </div>
               {lastUpdated && (
                 <div className="stat">
@@ -1222,13 +1232,15 @@ function Dashboard({ user, onLogout }) {
                         <Badge
                           variant="outline"
                           title={
-                            getReportAppointmentPriceBadge(selectedAppointment)
-                              .title
+                            getReportAppointmentPriceBadge(
+                              selectedAppointment,
+                            ).title
                           }
                         >
                           {
-                            getReportAppointmentPriceBadge(selectedAppointment)
-                              .label
+                            getReportAppointmentPriceBadge(
+                              selectedAppointment,
+                            ).label
                           }
                         </Badge>
                       )}
@@ -1333,7 +1345,11 @@ function TechnicianColumn({
                   : `Copy shown schedule for ${name}`
             }
           >
-            {copyStatus === 'copied' ? <Check size={14} /> : <Copy size={14} />}
+            {copyStatus === 'copied' ? (
+              <Check size={14} />
+            ) : (
+              <Copy size={14} />
+            )}
           </button>
           <span className="tech-count">{appointments.length}</span>
         </div>
@@ -1396,7 +1412,9 @@ function buildRiskTooltip(score, components, reason) {
           : components.recencyBoost >= 10
             ? '(<30 days ago)'
             : '(<60 days ago)';
-      lines.push(`  + ${components.recencyBoost}  Recent issue ${recencyDesc}`);
+      lines.push(
+        `  + ${components.recencyBoost}  Recent issue ${recencyDesc}`,
+      );
     }
     if (components.streakPenalty > 0) {
       const streakDesc =
@@ -1415,7 +1433,9 @@ function buildRiskTooltip(score, components, reason) {
     if (components.frequencyBonus < 0) {
       const freqDesc =
         components.frequencyBonus <= -10 ? '(every 3 wks)' : '(monthly)';
-      lines.push(`  ${components.frequencyBonus}  Frequent booker ${freqDesc}`);
+      lines.push(
+        `  ${components.frequencyBonus}  Frequent booker ${freqDesc}`,
+      );
     }
     if (components.perfectRecordBonus < 0) {
       lines.push(
@@ -1579,34 +1599,40 @@ function AppointmentRow({
         </span>
       </Cell>
       <Cell className="apt-row-actions">
-        <button
-          type="button"
-          className={`row-copy-btn ${copyStatus}`}
-          onClick={copyAppointment}
-          aria-label={copyLabel}
-          title={
-            copyStatus === 'copied'
-              ? 'Copied!'
-              : copyStatus === 'failed'
-                ? 'Could not copy. Try again.'
-                : 'Copy appointment'
-          }
-        >
-          {copyStatus === 'copied' ? <Check size={14} /> : <Copy size={14} />}
-        </button>
-        {onOpenDetails && (
+        <span className="apt-row-actions-inner">
           <button
-            className="row-detail-btn"
-            aria-label={`View ${appointmentTime} appointment details`}
-            onClick={(event) => {
-              event.stopPropagation();
-              if (isUpdated) onUpdateSeen?.();
-              onOpenDetails(appointment, event);
-            }}
+            type="button"
+            className={`row-copy-btn ${copyStatus}`}
+            onClick={copyAppointment}
+            aria-label={copyLabel}
+            title={
+              copyStatus === 'copied'
+                ? 'Copied!'
+                : copyStatus === 'failed'
+                  ? 'Could not copy. Try again.'
+                  : 'Copy appointment'
+            }
           >
-            <ChevronRight size={16} />
+            {copyStatus === 'copied' ? (
+              <Check size={16} />
+            ) : (
+              <Copy size={16} />
+            )}
           </button>
-        )}
+          {onOpenDetails && (
+            <button
+              className="row-detail-btn"
+              aria-label={`View ${appointmentTime} appointment details`}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (isUpdated) onUpdateSeen?.();
+                onOpenDetails(appointment, event);
+              }}
+            >
+              <ChevronRight size={16} />
+            </button>
+          )}
+        </span>
       </Cell>
     </Row>
   );

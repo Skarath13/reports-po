@@ -4,7 +4,7 @@
   padding: 15px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #111114;
+  background: var(--surface-subtle);
 }
 .report-card-header {
   display: flex;
@@ -50,6 +50,8 @@
   padding: 2px 6px;
   border-radius: 4px;
   font-variant-numeric: tabular-nums;
+  min-height: 22px;
+  white-space: nowrap;
 }
 .report-card-extra {
   margin-top: 14px;
@@ -59,10 +61,10 @@
   font-size: 11px;
 }
 .report-card.fixes {
-  border-left: 2px solid #83673e;
+  border-left: 2px solid var(--attention);
 }
 .report-card.cross-location {
-  border-left: 2px solid #906464;
+  border-left: 2px solid var(--destructive);
 }
 .cross-icon {
   position: absolute;
@@ -122,13 +124,13 @@
 }
 .report-note-entry {
   display: grid;
-  grid-template-columns: 70px minmax(0, 1fr);
+  grid-template-columns: 80px minmax(0, 1fr);
   align-items: start;
   gap: 9px;
 }
 .report-note-entry.profile {
-  background: #1c1c27;
-  border: 1px solid #373248;
+  background: var(--selection-background);
+  border: 1px solid var(--selection-border);
   border-radius: 7px;
   padding: 10px;
 }
@@ -137,8 +139,8 @@
   justify-content: center;
   align-items: center;
   border-radius: 4px;
-  background: #2b2b31;
-  color: #bbbbc5;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
   padding: 3px 5px;
   font-size: 8px;
   font-weight: 500;
@@ -146,19 +148,20 @@
   line-height: 1.4;
   text-transform: uppercase;
   text-align: center;
+  white-space: nowrap;
 }
 .report-note-entry.profile .report-note-label {
-  background: #332c43;
-  color: #cdb9f5;
+  background: var(--selection-background);
+  color: var(--selection-foreground);
 }
 .report-note-entry.business .report-note-label {
-  color: #ceb8f4;
-  background: #30283e;
+  color: var(--selection-foreground);
+  background: var(--selection-background);
 }
 .report-note-entry p {
   margin: 0;
   min-width: 0;
-  color: #d3d3dc;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.65;
   overflow-wrap: anywhere;
@@ -174,17 +177,17 @@
 }
 .current-appointment-note {
   min-width: 0;
-  border: 1px solid #354c40;
-  border-left: 2px solid #77b797;
+  border: 1px solid var(--positive-border);
+  border-left: 2px solid var(--positive);
   border-radius: 7px;
-  background: #17201b;
+  background: var(--positive-background);
   padding: 12px;
 }
 .current-appointment-note h3 {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #9ed0b4;
+  color: var(--positive);
   font-size: 11px;
   font-weight: 550;
   margin: 0;
@@ -198,14 +201,14 @@
   margin-top: 12px;
 }
 .current-appointment-note .report-note-entry + .report-note-entry {
-  border-top: 1px solid #304035;
+  border-top: 1px solid var(--positive-border);
   padding-top: 10px;
 }
 .current-appointment-note .report-note-entry p {
-  color: #d6e4da;
+  color: var(--positive-content);
 }
 .current-appointment-note.is-empty {
-  background: #19191d;
+  background: var(--surface-subtle);
   border-color: var(--border);
 }
 .current-appointment-note.is-empty h3 {
@@ -220,7 +223,7 @@
 .note-trail {
   min-width: 0;
   border: 1px solid var(--border);
-  background: #16161a;
+  background: var(--surface-subtle);
   border-radius: 7px;
 }
 .note-trail-heading {
@@ -238,7 +241,7 @@
   text-align: left;
 }
 .note-history-toggle:hover {
-  background: #202025;
+  background: var(--surface-raised);
 }
 .note-history-toggle:focus-visible {
   outline-offset: -3px;
@@ -256,7 +259,7 @@
   display: block;
   font-size: 11px;
   font-weight: 500;
-  color: #c4c4cf;
+  color: var(--text-secondary);
 }
 .note-history-count {
   display: block;
@@ -288,7 +291,7 @@
   bottom: 8px;
   left: 4px;
   width: 1px;
-  background: #45454f;
+  background: var(--border-strong);
 }
 .note-trail-item {
   position: relative;
@@ -301,8 +304,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #696975;
-  border: 1px solid #16161a;
+  background: var(--input);
+  border: 1px solid var(--surface-subtle);
 }
 .note-trail-item.has-note .note-trail-dot {
   background: var(--attention);
@@ -315,18 +318,18 @@
   padding: 9px;
   width: 100%;
   min-height: 44px;
-  background: #1e1e24;
-  border: 1px solid #3b3b44;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   text-align: left;
   overflow-wrap: anywhere;
 }
 button.note-trail-row:hover {
-  border-color: #727281;
+  border-color: var(--input);
 }
 .note-trail-item.selected .note-trail-row {
-  border-color: #8a76ac;
-  background: #292331;
+  border-color: var(--selection-border);
+  background: var(--selection-background);
 }
 .note-trail-row-top {
   display: flex;
@@ -343,23 +346,23 @@ button.note-trail-row:hover {
 .note-trail-status {
   padding: 2px 5px;
   border-radius: 4px;
-  color: #a1d3b6;
-  background: #273b2f;
+  color: var(--positive);
+  background: var(--positive-background);
   font-size: 8px;
   text-transform: uppercase;
 }
 .note-trail-status.cancelled {
-  color: #efa7ae;
-  background: #3b2b30;
+  color: var(--destructive);
+  background: var(--destructive-background);
 }
 .note-trail-status.no-show {
   color: var(--attention);
-  background: #383024;
+  background: var(--attention-background);
 }
 .note-trail-service {
   margin-top: 6px;
   font-size: 11px;
-  color: #d5d5df;
+  color: var(--text-secondary);
 }
 .note-trail-meta {
   display: flex;
@@ -380,15 +383,15 @@ button.note-trail-row:hover {
   margin-top: 6px;
 }
 .note-type-indicator {
-  color: #c0c0cd;
-  background: #30303a;
+  color: var(--text-secondary);
+  background: var(--surface-raised);
   padding: 2px 5px;
   border-radius: 4px;
   font-size: 8px;
 }
 .note-type-indicator.business {
-  color: #d0b9ee;
-  background: #362d43;
+  color: var(--selection-foreground);
+  background: var(--selection-background);
 }
 .note-trail-empty {
   font-size: 10px;
@@ -397,9 +400,9 @@ button.note-trail-row:hover {
 .note-trail-detail {
   margin-top: 6px;
   padding: 10px;
-  border: 1px solid #463c55;
+  border: 1px solid var(--selection-border);
   border-radius: 6px;
-  background: #24202c;
+  background: var(--selection-background);
 }
 .note-history-more {
   width: 100%;
@@ -407,8 +410,8 @@ button.note-trail-row:hover {
   margin-top: 12px;
   padding: 8px;
   font-size: 11px;
-  color: #d3d3de;
-  border: 1px solid #62626d;
+  color: var(--text-secondary);
+  border: 1px solid var(--input);
   border-radius: 6px;
   background: var(--secondary);
 }

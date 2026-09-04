@@ -17,6 +17,8 @@ api.request = async () => {
 };
 const scenario =
   new URLSearchParams(window.location.search).get('scenario') || 'healthy';
+const qaViewer =
+  new URLSearchParams(window.location.search).get('viewer') === 'qa';
 const pause = () =>
   new Promise((resolve) =>
     setTimeout(resolve, scenario === 'loading' ? 15000 : 200),
@@ -34,6 +36,7 @@ const snapshot = (key, appointments = []) => ({
 });
 const reports = new Map();
 const reviews = new Map();
+let previewChanged = false;
 
 function makeReport(date, locationId) {
   const location =
@@ -192,8 +195,20 @@ function makeReport(date, locationId) {
 
 api.getFullReport = async (date, locationId) => {
   await pause();
-  if (scenario === 'error') throw new Error('Synthetic report request failed.');
+  if (scenario === 'error')
+    throw new Error('Synthetic report request failed.');
   const report = makeReport(date, locationId);
+  if (scenario === 'updates' && previewChanged) {
+    const appointment = report.rankedByLikelihood[0];
+    if (appointment) {
+      appointment.customerNote =
+        'Updated request after refresh: please allow time for a style consultation.';
+      for (const section of ['calendar', 'notes']) {
+        report._governance.sectionSnapshots[section].snapshotHash +=
+          '-updated';
+      }
+    }
+  }
   reports.set(`${date}:${locationId}`, report);
   return report;
 };
@@ -288,6 +303,7 @@ api.getAudit = async (date) => ({
 
 function Preview() {
   const [loggedIn, setLoggedIn] = useState(scenario !== 'login');
+  const [updateQueued, setUpdateQueued] = useState(false);
   return (
     <>
       {loggedIn ? (
@@ -296,8 +312,10 @@ function Preview() {
             id:
               scenario === 'audit'
                 ? '9dee6da3-789a-46de-88f2-128385b2a4c0'
-                : 'preview-user',
-            username: 'Preview',
+                : qaViewer
+                  ? 'preview-qa'
+                  : 'preview-user',
+            username: qaViewer ? 'Preview QA' : 'Preview',
           }}
           onLogout={() => setLoggedIn(false)}
         />
@@ -320,15 +338,37 @@ function Preview() {
         }}
       >
         LOCAL PREVIEW · SYNTHETIC DATA
+        {scenario === 'updates' && (
+          <button
+            style={{
+              pointerEvents: 'auto',
+              marginLeft: 10,
+              textDecoration: 'underline',
+            }}
+            onClick={() => {
+              previewChanged = true;
+              setUpdateQueued(true);
+            }}
+            disabled={updateQueued}
+          >
+            {updateQueued
+              ? 'Sample update queued · press Refresh'
+              : 'Queue sample update'}
+          </button>
+        )}
       </div>
     </>
   );
 }
 
-const root = createRoot(document.getElementById('root'));
-
+let root;
 if (import.meta.hot) {
-  import.meta.hot.dispose(() => root.unmount());
+  // Reuse the root across overlapping dependency updates in the preview entry.
+  root = import.meta.hot.data.root || createRoot(document.getElementById('root'));
+  import.meta.hot.data.root = root;
+  import.meta.hot.prune(() => root.unmount());
+} else {
+  root = createRoot(document.getElementById('root'));
 }
 
 root.render(

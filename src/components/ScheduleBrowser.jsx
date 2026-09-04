@@ -15,26 +15,38 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Table, TableBody, TableHead, TableHeader, TableRow } from './ui/table';
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './ui/table';
 
 export default function ScheduleBrowser({
   appointments,
   hideNames,
+  view,
+  onViewChange,
+  sorting,
+  onSortingChange,
+  technician: savedTechnician,
+  onTechnicianChange,
   renderRow,
   renderGroups,
 }) {
   const [query, setQuery] = useState('');
-  const [technician, setTechnician] = useState('all');
-  const [view, setView] = useState('list');
-  const [sorting, setSorting] = useState([
-    { id: 'appointmentTime', desc: false },
-  ]);
   const technicians = useMemo(
     () => [
-      ...new Set(appointments.map((appointment) => appointment.technicianName)),
+      ...new Set(
+        appointments.map((appointment) => appointment.technicianName),
+      ),
     ],
     [appointments],
   );
+  const technician = technicians.includes(savedTechnician)
+    ? savedTechnician
+    : 'all';
   const filtered = useMemo(() => {
     const search = query.trim().toLocaleLowerCase();
     return appointments.filter(
@@ -67,8 +79,13 @@ export default function ScheduleBrowser({
   const table = useReactTable({
     data: filtered,
     columns,
-    state: { sorting },
-    onSortingChange: setSorting,
+    state: {
+      sorting:
+        hideNames && sorting[0]?.id === 'customerName'
+          ? [{ id: 'appointmentTime', desc: false }]
+          : sorting,
+    },
+    onSortingChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableSortingRemoval: false,
@@ -98,7 +115,7 @@ export default function ScheduleBrowser({
         <select
           aria-label="Filter by technician"
           value={technician}
-          onChange={(event) => setTechnician(event.target.value)}
+          onChange={(event) => onTechnicianChange(event.target.value)}
         >
           <option value="all">All technicians</option>
           {technicians.map((name) => (
@@ -109,22 +126,22 @@ export default function ScheduleBrowser({
         </select>
         <div className="schedule-view-toggle" aria-label="Schedule layout">
           <Button
-            variant={view === 'list' ? 'secondary' : 'ghost'}
-            size="sm"
-            aria-pressed={view === 'list'}
-            onClick={() => setView('list')}
-          >
-            <List size={15} />
-            List
-          </Button>
-          <Button
             variant={view === 'grouped' ? 'secondary' : 'ghost'}
             size="sm"
             aria-pressed={view === 'grouped'}
-            onClick={() => setView('grouped')}
+            onClick={() => onViewChange('grouped')}
           >
             <Columns2 size={15} />
             By technician
+          </Button>
+          <Button
+            variant={view === 'list' ? 'secondary' : 'ghost'}
+            size="sm"
+            aria-pressed={view === 'list'}
+            onClick={() => onViewChange('list')}
+          >
+            <List size={15} />
+            List
           </Button>
         </div>
       </div>
@@ -170,7 +187,9 @@ export default function ScheduleBrowser({
                           </button>
                         ) : (
                           <span
-                            className={header.id === 'actions' ? 'sr-only' : ''}
+                            className={
+                              header.id === 'actions' ? 'sr-only' : ''
+                            }
                           >
                             {header.column.columnDef.header}
                           </span>
@@ -195,7 +214,7 @@ export default function ScheduleBrowser({
             variant="outline"
             onClick={() => {
               setQuery('');
-              setTechnician('all');
+              onTechnicianChange('all');
             }}
           >
             Clear filters
