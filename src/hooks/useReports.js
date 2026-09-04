@@ -107,7 +107,9 @@ export function useFullReport(locationId, date, viewerId) {
     try {
       const location = LOCATIONS.find(l => l.id === locationId || l.squareId === locationId);
       const squareId = location?.squareId || locationId;
-      const report = await api.getFullReport(date, squareId);
+      const report = await api.getFullReport(date, squareId, {
+        signal: abortControllerRef.current.signal,
+      });
 
       // Only update if this is still the current request
       if (currentRequestId === requestIdRef.current) {

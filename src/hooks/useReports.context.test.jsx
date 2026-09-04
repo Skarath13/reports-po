@@ -64,9 +64,28 @@ test('a late response cannot replace the current report after returning to a cac
     expect(result.current.data?.marker).toBe('cached-tustin'),
   );
   rerender({ location: 'irvine' });
+  const irvineSignal = api.getFullReport.mock.calls[1][2].signal;
+  expect(irvineSignal.aborted).toBe(false);
   rerender({ location: 'tustin' });
+  expect(irvineSignal.aborted).toBe(true);
+  expect(api.getFullReport).toHaveBeenCalledTimes(2);
   expect(result.current.data?.marker).toBe('cached-tustin');
   await act(async () => resolveIrvine({ marker: 'late-irvine' }));
   expect(result.current.data?.marker).toBe('cached-tustin');
   expect(result.current.loading).toBe(false);
+});
+
+test('cancels pending network work when switching locations or leaving the dashboard', () => {
+  api.getFullReport.mockImplementation(() => new Promise(() => {}));
+  const { rerender, unmount } = renderHook(
+    ({ location }) => useFullReport(location, '2026-09-04', 'abort-test-viewer'),
+    { initialProps: { location: 'tustin' } },
+  );
+  const firstSignal = api.getFullReport.mock.calls[0][2].signal;
+  rerender({ location: 'irvine' });
+  expect(firstSignal.aborted).toBe(true);
+  const secondSignal = api.getFullReport.mock.calls[1][2].signal;
+  expect(secondSignal.aborted).toBe(false);
+  unmount();
+  expect(secondSignal.aborted).toBe(true);
 });

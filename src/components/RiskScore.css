@@ -1,0 +1,76 @@
+.risk-score-trigger {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 2px 5px;
+  margin-left: 4px;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: baseline;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.risk-score-trigger:hover,
+.risk-score-trigger[data-state='open'] {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  border-color: currentColor;
+}
+.risk-score-trigger:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.risk-score-popover {
+  z-index: 70;
+  width: min(360px, var(--radix-popover-content-available-width));
+  max-height: var(--radix-popover-content-available-height);
+  overflow-y: auto;
+  padding: 6px 16px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 14px 44px #0003;
+}
+.risk-score-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 1rem;
+}
+.risk-score-heading button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+.risk-score-heading button:hover {
+  background: var(--surface-hover);
+  color: var(--foreground);
+}
+.risk-score-popover pre {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.65;
+}
+@media (pointer: coarse), (max-width: 960px) {
+  .risk-score-trigger {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

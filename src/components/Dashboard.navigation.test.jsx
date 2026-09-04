@@ -141,6 +141,8 @@ test('sorts and filters the schedule without changing the report totals or searc
     screen.getByRole('button', { name: 'By technician' }),
   ).toHaveAttribute('aria-pressed', 'true');
   fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
+  expect(within(schedule()).getByText('Avery Chen')).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Hide Names' }));
   expect(within(schedule()).getAllByRole('row')[1]).toHaveTextContent(
     '9:00 AM',
   );
@@ -173,7 +175,6 @@ test('sorts and filters the schedule without changing the report totals or searc
 test('keeps current notes visible in the detail sheet, collapses history, and restores focus', async () => {
   mount();
   await screen.findByRole('button', { name: 'Sign off Calendar List View' });
-  fireEvent.click(screen.getByRole('button', { name: 'Show Names' }));
   const trigger = screen.getByRole('button', {
     name: 'View 9:00 AM appointment details',
   });
@@ -326,7 +327,7 @@ test('copies only the shown technician appointments and reports clipboard failur
   );
   await screen.findByRole('button', { name: 'Copied Chloe schedule' });
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-    '10:00 AM - Volume Set (3d) ~ $120',
+    '10:00 AM - Zoe Green - Volume Set (3d) ~ $120',
   );
   navigator.clipboard.writeText.mockRejectedValueOnce(new Error('denied'));
   fireEvent.click(
@@ -343,7 +344,7 @@ test('restores layout, sorting, filters, visibility, section, date and theme onl
   const first = mount();
   await screen.findByRole('button', { name: 'Sign off Calendar List View' });
   fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
-  fireEvent.click(screen.getByRole('button', { name: 'Show Names' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Hide Names' }));
   fireEvent.click(screen.getByRole('button', { name: 'Hide Prices' }));
   fireEvent.click(screen.getByRole('button', { name: 'Time', exact: true }));
   fireEvent.click(screen.getByRole('switch', { name: 'Light mode' }));
@@ -370,7 +371,7 @@ test('restores layout, sorting, filters, visibility, section, date and theme onl
   expect(
     screen.getByRole('button', { name: 'List', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
-  expect(screen.getByRole('button', { name: 'Hide Names' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Show Names' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Show Prices' })).toBeVisible();
   expect(
     screen.getByRole('combobox', { name: 'Filter by technician' }),
@@ -393,7 +394,7 @@ test('restores layout, sorting, filters, visibility, section, date and theme onl
   expect(
     screen.getByRole('button', { name: 'By technician' }),
   ).toHaveAttribute('aria-pressed', 'true');
-  expect(screen.getByRole('button', { name: 'Show Names' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Hide Names' })).toBeVisible();
   expect(
     screen.getByRole('button', { name: 'Today', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
@@ -405,7 +406,7 @@ test('restores layout, sorting, filters, visibility, section, date and theme onl
     />,
   );
   await screen.findByRole('button', { name: 'Sign off Calendar List View' });
-  expect(screen.getByRole('button', { name: 'Hide Names' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Show Names' })).toBeVisible();
   expect(document.documentElement.dataset.theme).toBe('light');
 });
 

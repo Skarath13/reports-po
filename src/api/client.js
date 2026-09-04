@@ -123,8 +123,9 @@ class ReportsAPIClient {
     return this.request(`/manager/${date}/${locationId}`);
   }
 
-  async getFullReport(date, locationId) {
+  async getFullReport(date, locationId, { signal } = {}) {
     return this.request(`/full/${date}/${locationId}`, {
+      signal,
       headers: {
         'x-report-view-session': this.getViewSessionId(),
       },

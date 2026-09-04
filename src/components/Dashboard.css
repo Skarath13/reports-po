@@ -34,9 +34,6 @@
   max-width: 100%;
   height: auto;
 }
-:root[data-theme='light'] .workspace-logo {
-  filter: brightness(0.38);
-}
 .sidebar-body {
   flex: 1;
   min-height: 0;
@@ -705,12 +702,6 @@
   color: var(--muted-foreground);
   overflow-wrap: anywhere;
 }
-.likelihood-pct {
-  font-size: 0.8125rem;
-  margin-left: 4px;
-  top: -0.3em;
-  cursor: help;
-}
 .apt-badges-inner {
   display: flex;
   flex-wrap: nowrap;
@@ -996,9 +987,6 @@
 }
 .monitoring-btn:hover {
   color: var(--foreground);
-}
-.skeleton-container {
-  padding: 24px 28px;
 }
 .error-state {
   display: flex;
@@ -1554,9 +1542,6 @@
   }
   .footer-stats {
     gap: 6px 12px;
-  }
-  .skeleton-container {
-    padding: 18px 14px;
   }
   .error-state {
     margin: 18px 14px;

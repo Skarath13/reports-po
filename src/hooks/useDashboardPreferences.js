@@ -14,7 +14,7 @@ export function dashboardPreferencesKey(user) {
 
 const defaults = {
   location: 'tustin',
-  hideNames: true,
+  hideNames: false,
   showPrices: true,
   activeSection: 'overview',
   dateMode: 'today',

@@ -39,7 +39,8 @@ import DashboardShell from './DashboardShell';
 import ScheduleBrowser from './ScheduleBrowser';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Skeleton } from './ui/skeleton';
+import { ReportLoading } from './LoadingState';
+import RiskScore from './RiskScore';
 import {
   Sheet,
   SheetContent,
@@ -59,24 +60,6 @@ import {
 import './Dashboard.css';
 
 const KATELYN_AUDIT_VIEWER_ID = '9dee6da3-789a-46de-88f2-128385b2a4c0';
-
-function SkeletonLoader() {
-  return (
-    <div
-      className="skeleton-container"
-      role="status"
-      aria-label="Loading report"
-    >
-      <span className="sr-only">Loading report…</span>
-      <div className="overview-metrics">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-24 rounded-lg" />
-        ))}
-      </div>
-      <Skeleton className="h-96 rounded-lg" />
-    </div>
-  );
-}
 
 // Get today's date in YYYY-MM-DD format (Pacific time)
 function getTodayPST() {
@@ -631,7 +614,15 @@ function DashboardWorkspace({ user, onLogout }) {
       onAudit={() => setShowAudit(true)}
     >
       {/* Loading / Error States */}
-      {showSkeleton && <SkeletonLoader />}
+      {showSkeleton && (
+        <ReportLoading
+          key={`${selectedLocation}:${selectedDate}`}
+          locationName={location?.name}
+          dateLabel={isToday ? 'Today' : 'Tomorrow'}
+          section={activeSection}
+          layout={preferences.scheduleView}
+        />
+      )}
       {error && !loading && (
         <div className="error-state" role="alert">
           <AlertTriangle size={18} />
@@ -1562,14 +1553,11 @@ function AppointmentRow({
             {titleCase(appointment.customerName)}
           </span>
           {likelihood > 0 && (
-            <sup
-              className="likelihood-pct"
-              style={{ color: likelihoodStyle.dot }}
-              title={tooltip}
-              aria-label={`Risk score ${likelihood} out of 100`}
-            >
-              {likelihood}
-            </sup>
+            <RiskScore
+              score={likelihood}
+              color={likelihoodStyle.dot}
+              description={tooltip}
+            />
           )}
         </Cell>
       )}

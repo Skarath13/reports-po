@@ -20,6 +20,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { Button } from './ui/button';
+import BrandLogo from './BrandLogo';
 import {
   Sheet,
   SheetContent,
@@ -85,13 +86,7 @@ export default function DashboardShell({
           navigate('overview');
         }}
       >
-        <img
-          className="workspace-logo"
-          src="/brand/elegant-lashes-by-katie.webp"
-          width="284"
-          height="97"
-          alt="Elegant Lashes by Katie"
-        />
+        <BrandLogo className="workspace-logo" />
       </a>
       <div className="sidebar-body">
         <div className="sidebar-label">Workspace</div>

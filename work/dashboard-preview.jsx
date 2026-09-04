@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Dashboard from '../src/components/Dashboard';
 import Login from '../src/components/Login';
+import { WorkspaceLoading } from '../src/components/LoadingState';
 import api from '../src/api/client';
 import { LOCATIONS } from '../src/hooks/useReports';
 import { REPORT_SECTION_KEYS } from '../src/constants/reportSections';
@@ -21,7 +22,7 @@ const qaViewer =
   new URLSearchParams(window.location.search).get('viewer') === 'qa';
 const pause = () =>
   new Promise((resolve) =>
-    setTimeout(resolve, scenario === 'loading' ? 15000 : 200),
+    setTimeout(resolve, ['loading', 'login-slow'].includes(scenario) ? 15000 : 200),
   );
 const entries = (appointments) =>
   appointments.map((appointment) => ({
@@ -137,6 +138,11 @@ function makeReport(date, locationId) {
         appointmentNoteHistoryHasMore: false,
         appointmentNoteHistoryAvailable: true,
         futureIssueLikelihood: i === 0 ? 25 : 0,
+        riskScoreComponents: i === 0 ? {
+          historicalRate: 20,
+          recencyBoost: 15,
+          frequencyBonus: -10,
+        } : null,
         locationId: location.squareId,
         locationName: location.name,
       };
@@ -302,11 +308,11 @@ api.getAudit = async (date) => ({
 });
 
 function Preview() {
-  const [loggedIn, setLoggedIn] = useState(scenario !== 'login');
+  const [loggedIn, setLoggedIn] = useState(!['login', 'login-error', 'login-slow'].includes(scenario));
   const [updateQueued, setUpdateQueued] = useState(false);
   return (
     <>
-      {loggedIn ? (
+      {scenario === 'startup' ? <WorkspaceLoading /> : loggedIn ? (
         <Dashboard
           user={{
             id:
@@ -320,7 +326,11 @@ function Preview() {
           onLogout={() => setLoggedIn(false)}
         />
       ) : (
-        <Login onLogin={async () => setLoggedIn(true)} />
+        <Login onLogin={async () => {
+          await new Promise(resolve => setTimeout(resolve, scenario === 'login-slow' ? 10000 : 1200));
+          if (scenario === 'login-error') throw new Error('That PIN wasn’t recognized. Please try again.');
+          setLoggedIn(true);
+        }} />
       )}
       <div
         style={{

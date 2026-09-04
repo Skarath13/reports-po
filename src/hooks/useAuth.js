@@ -39,7 +39,8 @@ export function useAuth() {
 
   const login = useCallback(async (pin) => {
     setError(null);
-    setLoading(true);
+    // Login owns pending-entry feedback; keep it mounted until authentication
+    // succeeds. Global loading is only for restoring an existing session.
     try {
       const data = await api.login(pin);
       setUser(data.user);
@@ -47,8 +48,6 @@ export function useAuth() {
     } catch (err) {
       setError(err.message);
       throw err;
-    } finally {
-      setLoading(false);
     }
   }, []);
 

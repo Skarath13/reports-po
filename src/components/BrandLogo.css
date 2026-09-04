@@ -1,0 +1,9 @@
+.brand-logo {
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+}
+:root[data-theme='light'] .brand-logo {
+  filter: brightness(0.38);
+}

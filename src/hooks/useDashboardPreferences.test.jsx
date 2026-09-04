@@ -9,6 +9,15 @@ const user = { id: 'preferences-test', username: 'Preferences' };
 beforeEach(() => localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
 
+test('shows client names by default and preserves an explicitly saved privacy choice', () => {
+  const first = renderHook(() => useDashboardPreferences(user));
+  expect(first.result.current[0].hideNames).toBe(false);
+  act(() => first.result.current[1]({ hideNames: true }));
+  first.unmount();
+  const second = renderHook(() => useDashboardPreferences(user));
+  expect(second.result.current[0].hideNames).toBe(true);
+});
+
 test('migrates existing choices, persists new preferences and restores them after remount', () => {
   localStorage.setItem('reports_hideNames_Preferences', 'false');
   localStorage.setItem('reports_location_Preferences', 'irvine');
@@ -53,7 +62,7 @@ test('rejects malformed settings and ignores arbitrary client data', () => {
   ).toMatchObject({
     location: 'tustin',
     theme: 'dark',
-    hideNames: true,
+    hideNames: false,
     sorting: [{ id: 'appointmentTime', desc: false }],
   });
   expect(

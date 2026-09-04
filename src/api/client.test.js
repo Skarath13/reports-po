@@ -12,6 +12,18 @@ describe('ReportsAPIClient auth failures', () => {
     delete global.fetch;
   });
 
+  test('passes report cancellation through to fetch', async () => {
+    const controller = new AbortController();
+    global.fetch.mockImplementation((_url, { signal }) => new Promise((_resolve, reject) => {
+      signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+    }));
+    const request = api.getFullReport('2026-09-04', 'tustin', { signal: controller.signal });
+    const rejected = expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    controller.abort();
+    await rejected;
+    expect(global.fetch).toHaveBeenCalledWith('/api/reports/full/2026-09-04/tustin', expect.objectContaining({ signal: controller.signal }));
+  });
+
   test('login 401 surfaces invalid credentials without auth-expired event', async () => {
     const authExpired = vi.fn();
     window.addEventListener('auth-expired', authExpired);
