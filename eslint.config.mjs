@@ -7,7 +7,7 @@ export default [
   { ignores: ['build/**', 'node_modules/**'] },
   js.configs.recommended,
   {
-    files: ['src/**/*.{js,jsx}'],
+    files: ['src/**/*.{js,jsx}', 'work/dashboard-preview.jsx'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

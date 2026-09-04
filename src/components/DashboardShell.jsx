@@ -1,0 +1,272 @@
+import { useRef, useState } from 'react';
+import {
+  Activity,
+  ArrowUpRight,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  ClipboardCheck,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  StickyNote,
+  Sun,
+  Users,
+  Wrench,
+  Copy,
+} from 'lucide-react';
+import { Button } from './ui/button';
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from './ui/sheet';
+
+const navigation = [
+  { key: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { key: 'calendar', label: 'Schedule', icon: CalendarDays },
+  { key: 'notes', label: 'Client notes', icon: StickyNote },
+  { key: 'potential-fixes', label: 'Potential fixes', icon: Wrench },
+  { key: 'duplicates', label: 'Duplicate bookings', icon: Copy },
+  { key: 'anyone-available', label: 'Anyone available', icon: Users },
+  { key: 'staff-first-hour', label: 'First-hour gaps', icon: Sun },
+];
+
+export default function DashboardShell({
+  user,
+  onLogout,
+  locations,
+  location,
+  onLocationChange,
+  dateLabel,
+  isToday,
+  onToday,
+  onTomorrow,
+  syncLabel,
+  refreshing,
+  onRefresh,
+  activeSection,
+  onSectionChange,
+  counts,
+  sectionStates,
+  reviewCount,
+  reviewStatus,
+  canViewAudit,
+  onAudit,
+  children,
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const headingRef = useRef(null);
+  const navigationPendingRef = useRef(false);
+  const navigate = (key) => {
+    onSectionChange(key);
+    navigationPendingRef.current = menuOpen;
+    setMenuOpen(false);
+    if (!menuOpen) headingRef.current?.focus({ preventScroll: true });
+    window.scrollTo?.({ top: 0, behavior: 'instant' });
+  };
+
+  const sidebar = (
+    <>
+      <a
+        className="workspace-brand"
+        href="#report-main"
+        onClick={(event) => {
+          event.preventDefault();
+          navigate('overview');
+        }}
+      >
+        <span className="brand-mark">
+          <Sparkles size={20} />
+        </span>
+        <span>
+          <strong>Elegant Lashes</strong>
+          <small>Reports workspace</small>
+        </span>
+      </a>
+      <div className="sidebar-label">Workspace</div>
+      <nav className="workspace-navigation" aria-label="Report sections">
+        {navigation.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            className={`nav-item ${activeSection === key ? 'active' : ''}`}
+            aria-current={activeSection === key ? 'page' : undefined}
+            onClick={() => navigate(key)}
+          >
+            <Icon size={17} />
+            <span>{label}</span>
+            {sectionStates[key]?.ready &&
+            sectionStates[key]?.signedOff &&
+            sectionStates[key]?.changedCount === 0 &&
+            reviewStatus === 'ready' ? (
+              <Check
+                size={13}
+                className="nav-reviewed"
+                aria-label="Review current"
+              />
+            ) : (
+              counts[key] != null && (
+                <span className="nav-count">{counts[key]}</span>
+              )
+            )}
+          </button>
+        ))}
+      </nav>
+      <div className="sidebar-review">
+        <ClipboardCheck size={17} />
+        <span>
+          Section reviews
+          <strong>
+            {reviewStatus === 'ready'
+              ? `${reviewCount} of 6 complete`
+              : reviewStatus === 'error'
+                ? 'Status unavailable'
+                : 'Preparing status…'}
+          </strong>
+        </span>
+        <div className="review-meter" aria-hidden="true">
+          <span
+            style={{
+              width: `${reviewStatus === 'ready' ? (reviewCount / 6) * 100 : 0}%`,
+            }}
+          />
+        </div>
+        <small>
+          {isToday
+            ? 'For this location · today'
+            : 'Tomorrow opens for sign-off on the day'}
+        </small>
+      </div>
+      <div className="sidebar-footer">
+        <a href="/monitoring" target="_blank" rel="noopener noreferrer">
+          <Activity size={16} />
+          System status
+          <ArrowUpRight size={13} />
+        </a>
+        <div className="sidebar-user">
+          <span className="user-avatar">
+            {user?.username?.slice(0, 1).toUpperCase() || 'E'}
+          </span>
+          <span>
+            {user?.username}
+            <small>Reports access</small>
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onLogout}
+            aria-label="Logout"
+          >
+            <LogOut size={16} />
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="report-dashboard">
+      <a className="skip-link" href="#report-main">
+        Skip to report
+      </a>
+      <aside className="workspace-sidebar">{sidebar}</aside>
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent
+          side="left"
+          className="mobile-sidebar"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            (navigationPendingRef.current
+              ? headingRef
+              : menuRef
+            ).current?.focus({ preventScroll: true });
+            navigationPendingRef.current = false;
+          }}
+        >
+          <SheetTitle className="sr-only">Report navigation</SheetTitle>
+          <SheetDescription className="sr-only">
+            Choose a report section.
+          </SheetDescription>
+          {sidebar}
+        </SheetContent>
+      </Sheet>
+      <div className="workspace-main">
+        <header className="report-header">
+          <div className="header-breadcrumb">
+            <Button
+              ref={menuRef}
+              variant="ghost"
+              size="icon"
+              className="mobile-menu"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open navigation"
+            >
+              <Menu />
+            </Button>
+            <span>Reports</span>
+            <ChevronRight size={13} />
+            <strong>{location?.name}</strong>
+          </div>
+          <div className="header-right">
+            <span className="header-sync">
+              {syncLabel ? `Synced ${syncLabel} PT` : 'Awaiting report'}
+            </span>
+            <Button variant="outline" onClick={onRefresh} disabled={refreshing}>
+              <RefreshCw size={15} className={refreshing ? 'spinning' : ''} />
+              <span>{refreshing ? 'Refreshing' : 'Refresh'}</span>
+            </Button>
+            {canViewAudit && (
+              <Button variant="ghost" onClick={onAudit}>
+                <ShieldCheck size={15} />
+                Audit
+              </Button>
+            )}
+          </div>
+        </header>
+        <div className="workspace-heading">
+          <div>
+            <span className="eyebrow">Daily operations</span>
+            <h1 ref={headingRef} tabIndex={-1}>
+              {activeSection === 'overview'
+                ? 'Daily overview'
+                : navigation.find((item) => item.key === activeSection)?.label}
+            </h1>
+            <p>
+              {dateLabel}
+              <span className="time-zone">Pacific time</span>
+            </p>
+          </div>
+          <div className="date-toggle" aria-label="Report date">
+            <button
+              className={isToday ? 'active' : ''}
+              aria-pressed={isToday}
+              onClick={onToday}
+            >
+              Today
+            </button>
+            <button
+              className={!isToday ? 'active' : ''}
+              aria-pressed={!isToday}
+              onClick={onTomorrow}
+            >
+              Tomorrow
+            </button>
+          </div>
+        </div>
+        <nav className="location-tabs" aria-label="Report location">
+          {locations.map((item) => (
+            <button
+              key={item.id}
+              className={`location-tab ${location?.id === item.id ? 'active' : ''}`}
+              aria-pressed={location?.id === item.id}
+              onClick={() => onLocationChange(item.id)}
+            >
+              {item.name}
+            </button>
+          ))}
+        </nav>
+        {children}
+      </div>
+    </div>
+  );
+}

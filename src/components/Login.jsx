@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles } from 'lucide-react';
 import './Login.css';
 
 function Login({ onLogin, error: authError }) {
@@ -76,11 +77,12 @@ function Login({ onLogin, error: authError }) {
     <div className="login-container" ref={containerRef} tabIndex={-1}>
       <div className="login-card">
         <div className="login-header">
+          <span className="login-brand"><Sparkles size={17} />Elegant Lashes</span>
           <h1>Reports</h1>
           <p>Enter PIN</p>
         </div>
 
-        <div className="pin-display">
+        <div className="pin-display" aria-label={`${pin.length} of 4 PIN digits entered`} role="status">
           {[0, 1, 2, 3].map(i => (
             <div
               key={i}
@@ -90,7 +92,7 @@ function Login({ onLogin, error: authError }) {
         </div>
 
         {(error || authError) && (
-          <div className="error-message">
+          <div className="error-message" role="alert">
             {error || authError}
           </div>
         )}
@@ -109,6 +111,7 @@ function Login({ onLogin, error: authError }) {
           <button
             className="pin-button secondary"
             onClick={handleClear}
+            aria-label="Clear PIN"
             disabled={loading}
           >
             C
@@ -123,6 +126,7 @@ function Login({ onLogin, error: authError }) {
           <button
             className="pin-button secondary"
             onClick={handleDelete}
+            aria-label="Delete last digit"
             disabled={loading}
           >
             ←

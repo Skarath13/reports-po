@@ -3,6 +3,7 @@ import SectionReviewControl from './SectionReviewControl';
 
 function ReviewableSectionHeader({
   title,
+  description,
   icon,
   state,
   isToday,
@@ -14,7 +15,7 @@ function ReviewableSectionHeader({
 }) {
   return (
     <div className="section-header section-review-header">
-      <h2 className="section-title">{icon}{title}</h2>
+      <div className="section-heading"><h2 className="section-title">{icon}{title}</h2>{description && <p>{description}</p>}</div>
       <div className="section-header-controls">
         {children}
         <SectionReviewControl

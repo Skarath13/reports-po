@@ -11,7 +11,17 @@ export default defineConfig(({ mode }) => {
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     // Preserve the existing public API override without exposing other environment values.
     define: { 'process.env.REACT_APP_API_URL': JSON.stringify(env.REACT_APP_API_URL || '') },
-    build: { outDir: 'build', assetsDir: 'static', emptyOutDir: true },
+    build: {
+      outDir: 'build',
+      assetsDir: 'static',
+      emptyOutDir: true,
+      license: { fileName: 'dependency-licenses.txt' },
+      rolldownOptions: {
+        output: {
+          postBanner: '/*! Licenses: /dependency-licenses.txt and /shadcn-ui-license.txt */',
+        },
+      },
+    },
     test: {
       environment: 'jsdom',
       globals: true,

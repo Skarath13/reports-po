@@ -1,758 +1,436 @@
-/* =====================================
-   ReportCard Component Styles
-   UNIFIED card structure for all sections
-   ===================================== */
-
-/* =====================================
-   BASE CARD STYLES - Same for ALL variants
-   ===================================== */
-
 .report-card {
-  /* CSS Custom Properties - defaults */
-  --rc-bg-start: #f8fafc;
-  --rc-bg-end: #f1f5f9;
-  --rc-border-color: #e2e8f0;
-  --rc-shadow-color: rgba(0, 0, 0, 0.1);
-  --rc-time-color: #1e40af;
-  --rc-customer-color: #1e293b;
-  --rc-service-color: #64748b;
-  --rc-tech-bg: rgba(0, 0, 0, 0.08);
-  --rc-tech-color: #475569;
-  --rc-extra-border: rgba(0, 0, 0, 0.08);
-  --rc-extra-bg: rgba(0, 0, 0, 0.03);
-
-  /* Card structure */
-  border-radius: 12px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
   position: relative;
-  overflow: hidden;
-
-  /* Applied theme */
-  background: linear-gradient(145deg, var(--rc-bg-start), var(--rc-bg-end));
-  border: 1px solid var(--rc-border-color);
-  box-shadow: 0 2px 8px var(--rc-shadow-color);
-
-  /* Interactions */
-  transition: transform 0.15s, box-shadow 0.15s;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #111114;
 }
-
-.report-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
-
-/* =====================================
-   HEADER - Time + Technician (same row)
-   ===================================== */
-
 .report-card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--rc-extra-border);
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
 }
-
 .report-card-time {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: var(--rc-time-color);
+  font-size: 13px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
 }
-
 .report-card-tech {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: var(--rc-tech-bg);
-  color: var(--rc-tech-color);
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+  text-align: right;
 }
-
-/* =====================================
-   BODY - Customer, Service, Days Badge
-   ===================================== */
-
-.report-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .report-card-customer-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
 }
-
 .report-card-customer {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--rc-customer-color);
-  flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.report-card-service {
-  font-size: 12px;
-  font-weight: 500;
-  opacity: 0.85;
-  line-height: 1.3;
-  color: var(--rc-service-color);
-}
-
-/* Days Badge */
-.days-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.days-badge.inline {
-  padding: 2px 6px;
-  font-size: 10px;
-  margin-left: 4px;
-}
-
-/* =====================================
-   EXTRA - Section-specific content
-   ===================================== */
-
-.report-card-extra {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--rc-extra-border);
   font-size: 13px;
-  color: var(--rc-service-color);
-  line-height: 1.5;
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }
-
-/* Cross-location indicator */
-.report-card .cross-icon {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 14px;
-}
-
-/* =====================================
-   VARIANT: FIXES (Peach/Coral)
-   ===================================== */
-
-.report-card.fixes {
-  --rc-bg-start: #ffe8db;
-  --rc-bg-end: #ffdcc8;
-  --rc-border-color: #ffb399;
-  --rc-shadow-color: rgba(255, 148, 115, 0.2);
-  --rc-time-color: #c2410c;
-  --rc-customer-color: #7c2d12;
-  --rc-service-color: #9a3412;
-  --rc-tech-bg: rgba(194, 65, 12, 0.15);
-  --rc-tech-color: #c2410c;
-  --rc-extra-border: rgba(194, 65, 12, 0.2);
-}
-
-/* =====================================
-   VARIANT: DUPLICATES (Amber/Gold)
-   ===================================== */
-
-.report-card.duplicates {
-  --rc-bg-start: #fef3c7;
-  --rc-bg-end: #fde68a;
-  --rc-border-color: #fbbf24;
-  --rc-shadow-color: rgba(251, 191, 36, 0.25);
-  --rc-time-color: #92400e;
-  --rc-customer-color: #78350f;
-  --rc-service-color: #92400e;
-  --rc-tech-bg: rgba(120, 53, 15, 0.15);
-  --rc-tech-color: #78350f;
-  --rc-extra-border: rgba(180, 83, 9, 0.25);
-}
-
-/* Cross-location variant */
-.report-card.duplicates.cross-location {
-  --rc-bg-start: #fef2f2;
-  --rc-bg-end: #fee2e2;
-  --rc-border-color: #fca5a5;
-  border-left: 4px solid #ef4444;
-}
-
-/* Duplicates extra content */
-.report-card.duplicates .dup-summary {
+.report-card-service {
   font-size: 11px;
-  font-weight: 600;
-  color: #92400e;
-  margin-bottom: 8px;
+  color: var(--muted-foreground);
+  margin-top: 5px;
+  overflow-wrap: anywhere;
 }
-
-.report-card.duplicates .dup-appointments {
+.days-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.report-card-extra {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.report-card.fixes {
+  border-left: 2px solid #83673e;
+}
+.report-card.cross-location {
+  border-left: 2px solid #906464;
+}
+.cross-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 12px;
+}
+.report-card.cross-location .report-card-customer-row {
+  padding-right: 24px;
+}
+.dup-summary {
+  font-size: 10px;
+  color: var(--attention);
+  margin-bottom: 7px;
+}
+.dup-appointments {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
-
-.report-card.duplicates .dup-appt-row {
+.dup-appt-row {
   display: flex;
-  align-items: center;
-  gap: 6px;
   flex-wrap: wrap;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(120, 53, 15, 0.1);
+  align-items: center;
+  gap: 7px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
 }
-
-.report-card.duplicates .dup-appt-row:last-child {
-  border-bottom: none;
+.dup-appt-row:last-child {
+  border: 0;
   padding-bottom: 0;
 }
-
-.report-card.duplicates .dup-appt-time {
-  font-size: 12px;
-  font-weight: 700;
-  color: #78350f;
-  min-width: 65px;
-}
-
-.report-card.duplicates .dup-appt-service {
+.dup-appt-time {
+  color: var(--foreground);
   font-size: 11px;
-  font-weight: 500;
-  color: #92400e;
+  font-variant-numeric: tabular-nums;
+}
+.dup-appt-service {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.report-card.duplicates .dup-appt-tech {
+  min-width: 100px;
   font-size: 10px;
-  font-weight: 600;
-  color: #78350f;
-  background: rgba(120, 53, 15, 0.15);
-  padding: 2px 8px;
-  border-radius: 4px;
+  overflow-wrap: anywhere;
 }
-
-.report-card.duplicates .dup-appt-loc {
+.dup-appt-tech,
+.dup-appt-loc {
   font-size: 9px;
-  font-weight: 600;
-  color: #b45309;
-  background: rgba(180, 83, 9, 0.12);
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 4px;
+  background: var(--secondary);
 }
-
-/* =====================================
-   VARIANT: ANYONE AVAILABLE (Lavender)
-   ===================================== */
-
-.report-card.anyone {
-  --rc-bg-start: #ede9fe;
-  --rc-bg-end: #ddd6fe;
-  --rc-border-color: #a78bfa;
-  --rc-shadow-color: rgba(167, 139, 250, 0.2);
-  --rc-time-color: #6d28d9;
-  --rc-customer-color: #4c1d95;
-  --rc-service-color: #5b21b6;
-  --rc-tech-bg: rgba(109, 40, 217, 0.15);
-  --rc-tech-color: #6d28d9;
-  --rc-extra-border: rgba(109, 40, 217, 0.2);
+.dup-appt-loc {
+  color: var(--attention);
 }
-
-/* =====================================
-   VARIANT: NOTE (Warm card with distinct current notes)
-   ===================================== */
-
-.report-card.note {
-  --rc-bg-start: #fffefb;
-  --rc-bg-end: #fffefb;
-  --rc-border-color: #eadfbe;
-  --rc-shadow-color: rgba(120, 83, 9, 0.07);
-  --rc-time-color: #1e40af;
-  --rc-customer-color: #1e293b;
-  --rc-service-color: #64748b;
-  --rc-tech-bg: rgba(124, 58, 237, 0.1);
-  --rc-tech-color: #7c3aed;
-  --rc-extra-border: #e9e2cf;
-
-  border-radius: 12px;
-}
-
-.report-card.note:hover {
-  transform: none;
-  box-shadow: 0 3px 12px var(--rc-shadow-color);
-}
-
-/* Retain the notes section's warm accent. */
-.report-card.note::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: #eab308;
-  border-radius: 12px 12px 0 0;
-}
-
-/* Note content styling */
 .report-note-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
-
 .report-note-entry {
   display: grid;
-  grid-template-columns: 86px minmax(0, 1fr);
+  grid-template-columns: 70px minmax(0, 1fr);
   align-items: start;
-  gap: 8px;
+  gap: 9px;
 }
-
 .report-note-entry.profile {
-  margin-bottom: 2px;
-  padding: 8px;
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  border-radius: 6px;
-  background: rgba(239, 246, 255, 0.72);
+  background: #1c1c27;
+  border: 1px solid #373248;
+  border-radius: 7px;
+  padding: 10px;
 }
-
 .report-note-label {
   display: inline-flex;
-  align-items: center;
   justify-content: center;
-  min-height: 20px;
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: rgba(120, 113, 108, 0.12);
-  color: #57534e;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-  text-align: center;
+  align-items: center;
+  border-radius: 4px;
+  background: #2b2b31;
+  color: #bbbbc5;
+  padding: 3px 5px;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
   text-transform: uppercase;
+  text-align: center;
 }
-
 .report-note-entry.profile .report-note-label {
-  background: rgba(37, 99, 235, 0.12);
-  color: #1d4ed8;
+  background: #332c43;
+  color: #cdb9f5;
 }
-
 .report-note-entry.business .report-note-label {
-  background: rgba(124, 58, 237, 0.1);
-  color: #6d28d9;
+  color: #ceb8f4;
+  background: #30283e;
 }
-
-.report-card.note .report-note-entry p {
-  min-width: 0;
+.report-note-entry p {
   margin: 0;
-  color: #44403c;
-  line-height: 1.45;
+  min-width: 0;
+  color: #d3d3dc;
+  font-size: 13px;
+  line-height: 1.65;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
-
-/* Current notes stay visible; past appointments are a separate disclosure. */
 .appointment-note-history {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
 .report-note-list + .appointment-note-history {
   margin-top: 12px;
 }
-
-.current-appointment-note,
-.note-trail {
-  min-width: 0;
-  border-radius: 9px;
-}
-
 .current-appointment-note {
+  min-width: 0;
+  border: 1px solid #354c40;
+  border-left: 2px solid #77b797;
+  border-radius: 7px;
+  background: #17201b;
   padding: 12px;
-  border: 1px solid #b8ded5;
-  border-left: 4px solid #0d9488;
-  background: #ecfdf5;
 }
-
 .current-appointment-note h3 {
   display: flex;
   align-items: center;
   gap: 7px;
+  color: #9ed0b4;
+  font-size: 11px;
+  font-weight: 550;
   margin: 0;
-  color: #115e59;
-  font-size: 13px;
-  font-weight: 700;
 }
-
 .current-appointment-note h3 svg {
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
-
 .current-appointment-note .report-note-list {
   margin-top: 12px;
-  gap: 10px;
 }
-
-.current-appointment-note .report-note-label {
-  font-size: 10px;
-}
-
-.report-card.note .current-appointment-note .report-note-entry p {
-  color: #134e4a;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
 .current-appointment-note .report-note-entry + .report-note-entry {
+  border-top: 1px solid #304035;
   padding-top: 10px;
-  border-top: 1px solid #cce8df;
 }
-
+.current-appointment-note .report-note-entry p {
+  color: #d6e4da;
+}
 .current-appointment-note.is-empty {
-  border-color: #e2e8f0;
-  border-left-color: #cbd5e1;
-  background: #f8fafc;
+  background: #19191d;
+  border-color: var(--border);
 }
-
 .current-appointment-note.is-empty h3 {
-  color: #475569;
+  color: var(--muted-foreground);
 }
-
 .current-note-empty,
 .note-history-message {
+  color: var(--muted-foreground);
+  font-size: 11px;
   margin: 7px 0 0;
-  color: #64748b;
-  font-size: 12px;
 }
-
 .note-trail {
-  border: 1px solid #dce3eb;
-  background: #f8fafc;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: #16161a;
+  border-radius: 7px;
 }
-
 .note-trail-heading {
   margin: 0;
 }
-
 .note-history-toggle {
-  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 64px;
+  gap: 9px;
   padding: 12px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: #64748b;
-  font: inherit;
+  min-height: 52px;
+  width: 100%;
+  color: var(--muted-foreground);
+  border-radius: 7px;
   text-align: left;
-  cursor: pointer;
 }
-
 .note-history-toggle:hover {
-  background: #edf2f7;
+  background: #202025;
 }
-
 .note-history-toggle:focus-visible {
-  outline: 2px solid #2563eb;
   outline-offset: -3px;
 }
-
 .note-history-toggle svg {
   flex-shrink: 0;
+  width: 15px;
+  height: 15px;
 }
-
 .note-history-summary {
   flex: 1;
   min-width: 0;
 }
-
-.note-history-title,
-.note-history-count {
-  display: block;
-}
-
 .note-history-title {
-  color: #334155;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.note-history-count {
-  margin-top: 3px;
-  color: #64748b;
+  display: block;
   font-size: 11px;
   font-weight: 500;
-  line-height: 1.4;
+  color: #c4c4cf;
 }
-
+.note-history-count {
+  display: block;
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  margin-top: 3px;
+}
 .note-history-chevron {
-  transition: transform 0.15s ease;
+  transition: transform 0.15s;
 }
-
-.note-history-toggle[aria-expanded="true"] .note-history-chevron {
+.note-history-toggle[aria-expanded='true'] .note-history-chevron {
   transform: rotate(180deg);
 }
-
 .note-trail-content {
   padding: 12px;
-  border-top: 1px solid #dce3eb;
+  border-top: 1px solid var(--border);
 }
-
 .note-trail-list {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
 .note-trail-list::before {
   content: '';
   position: absolute;
   top: 8px;
   bottom: 8px;
-  left: 6px;
-  width: 2px;
-  border-radius: 2px;
-  background: #dce3eb;
+  left: 4px;
+  width: 1px;
+  background: #45454f;
 }
-
 .note-trail-item {
   position: relative;
-  padding-left: 20px;
+  padding-left: 17px;
 }
-
 .note-trail-dot {
   position: absolute;
-  z-index: 1;
-  top: 16px;
-  left: 2px;
-  width: 10px;
-  height: 10px;
-  border: 2px solid #f8fafc;
+  top: 15px;
+  left: 1px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #a8a29e;
-  box-shadow: 0 0 0 1px #cbd5e1;
+  background: #696975;
+  border: 1px solid #16161a;
 }
-
 .note-trail-item.has-note .note-trail-dot {
-  background: #ca8a04;
+  background: var(--attention);
 }
-
 .note-trail-item.selected .note-trail-dot {
-  background: #2563eb;
+  background: var(--primary);
 }
-
 .note-trail-row {
-  box-sizing: border-box;
   display: block;
+  padding: 9px;
   width: 100%;
   min-height: 44px;
-  margin: 0;
-  padding: 8px 9px;
-  border: 1px solid #e2e8f0;
-  border-radius: 7px;
-  background: #fff;
-  color: #334155;
-  font: inherit;
+  background: #1e1e24;
+  border: 1px solid #3b3b44;
+  border-radius: 6px;
   text-align: left;
   overflow-wrap: anywhere;
 }
-
-button.note-trail-row {
-  cursor: pointer;
-}
-
 button.note-trail-row:hover {
-  border-color: #94a3b8;
-  background: #f1f5f9;
+  border-color: #727281;
 }
-
-button.note-trail-row:focus-visible,
-.note-history-more:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
-}
-
 .note-trail-item.selected .note-trail-row {
-  border-color: rgba(37, 99, 235, 0.36);
-  background: rgba(239, 246, 255, 0.76);
+  border-color: #8a76ac;
+  background: #292331;
 }
-
 .note-trail-row-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
-
 .note-trail-row time {
-  min-width: 0;
-  color: #475569;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--foreground);
 }
-
 .note-trail-status {
-  flex-shrink: 0;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: rgba(22, 101, 52, 0.1);
-  color: #166534;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.025em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #a1d3b6;
+  background: #273b2f;
+  font-size: 8px;
   text-transform: uppercase;
 }
-
 .note-trail-status.cancelled {
-  background: rgba(185, 28, 28, 0.1);
-  color: #991b1b;
+  color: #efa7ae;
+  background: #3b2b30;
 }
-
 .note-trail-status.no-show {
-  background: rgba(124, 45, 18, 0.12);
-  color: #7c2d12;
+  color: var(--attention);
+  background: #383024;
 }
-
 .note-trail-service {
-  margin-top: 4px;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 700;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #d5d5df;
 }
-
 .note-trail-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px 9px;
-  margin-top: 2px;
-  color: #64748b;
-  font-size: 11px;
+  gap: 3px 8px;
+  margin-top: 3px;
+  font-size: 9px;
+  color: var(--muted-foreground);
 }
-
-.note-trail-meta span {
-  min-width: 0;
-}
-
 .note-trail-meta span + span::before {
   content: '·';
-  margin-right: 9px;
+  margin-right: 8px;
 }
-
 .note-trail-indicators {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 6px;
 }
-
 .note-type-indicator {
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: rgba(120, 113, 108, 0.11);
-  color: #57534e;
-  font-size: 9px;
-  font-weight: 800;
-  text-transform: uppercase;
+  color: #c0c0cd;
+  background: #30303a;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 8px;
 }
-
 .note-type-indicator.business {
-  background: rgba(124, 58, 237, 0.1);
-  color: #6d28d9;
+  color: #d0b9ee;
+  background: #362d43;
 }
-
 .note-trail-empty {
-  color: #64748b;
-  font-size: 11px;
+  font-size: 10px;
+  color: var(--muted-foreground);
 }
-
 .note-trail-detail {
-  margin: 6px 0 2px;
-  padding: 9px;
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  border-radius: 7px;
-  background: rgba(239, 246, 255, 0.72);
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid #463c55;
+  border-radius: 6px;
+  background: #24202c;
 }
-
 .note-history-more {
   width: 100%;
-  min-height: 44px;
-  margin-top: 10px;
-  padding: 8px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  background: #fff;
-  color: #334155;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
+  min-height: 38px;
+  margin-top: 12px;
+  padding: 8px;
+  font-size: 11px;
+  color: #d3d3de;
+  border: 1px solid #62626d;
+  border-radius: 6px;
+  background: var(--secondary);
 }
-
-.note-history-more:hover:not(:disabled) {
-  background: #edf2f7;
-}
-
-.note-history-more:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
 .note-history-error,
 .note-history-coverage {
   margin: 8px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
 }
-
 .note-history-error {
-  color: #b91c1c;
+  color: var(--destructive);
 }
-
-.note-history-coverage {
-  color: #64748b;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .note-history-chevron {
-    transition: none;
-  }
-}
-
 @media (max-width: 480px) {
-  .notes-section .card-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .report-note-entry {
-    grid-template-columns: 1fr;
-    gap: 5px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
   }
-
   .report-note-label {
     justify-self: start;
   }
-
-  .note-trail-row-top {
-    align-items: flex-start;
+  .report-card {
+    padding: 13px;
   }
 }

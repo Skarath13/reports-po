@@ -2,15 +2,7 @@ import React from 'react';
 import { useUpdateAcknowledgement } from '../../hooks/useUpdateAcknowledgement';
 import './ReportCard.css';
 
-// Days-since color mapping
-function getDaysSinceStyle(days) {
-  if (days === null || days === undefined) return { bg: '#e5e7eb', text: '#374151', label: 'New' };
-  if (days <= 6) return { bg: '#a855f7', text: '#ffffff', label: `${days}d` };   // Purple (1-6)
-  if (days <= 14) return { bg: '#22c55e', text: '#ffffff', label: `${days}d` };  // Green (7-14)
-  if (days <= 28) return { bg: '#fde047', text: '#854d0e', label: `${days}d` };  // Yellow (15-28)
-  if (days <= 60) return { bg: '#fb923c', text: '#ffffff', label: `${days}d` };  // Orange (29-60)
-  return { bg: '#ef4444', text: '#ffffff', label: `${days}d` };                   // Red (60+)
-}
+import { getDaysSinceStyle } from '../../utils/reportAppearance';
 
 // Days Since Badge component
 export function DaysBadge({ days, inline }) {

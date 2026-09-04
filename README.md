@@ -25,6 +25,30 @@ Vite preserves the Worker's `build/` asset directory and the existing build meta
 script. The API defaults to `/api/reports`; the optional public `REACT_APP_API_URL`
 build variable is preserved. Only that variable is exposed to the browser.
 
+## Dashboard UI
+
+The neutral black theme lives in `src/index.css`. The shared shell, schedule,
+appointment detail sheet, and notes use the existing report and review hooks.
+Search and technician filters stay in memory, reset on location/date/privacy
+changes, and do not alter report totals or the section snapshot being signed off.
+The name preference applies to the schedule and its detail panel; the dedicated
+notes and exception sections retain their existing client-name display.
+
+Selected shadcn Radix components live in `src/components/ui`; their pinned source
+and MIT notice are in `licenses/`. TanStack Table v8 handles local sorting.
+
+For local visual review without backend access:
+
+```bash
+npm run preview:fixture
+# Open http://127.0.0.1:5178/work/dashboard-preview.html
+```
+
+That development-only entry uses synthetic data and disables unstubbed API
+requests. It is excluded from the production build. Add `?scenario=empty`,
+`error`, `duplicates-error`, `review-error`, `loading`, `login`, or `audit` to
+exercise the corresponding state. Fixture sign-offs live only in page memory.
+
 ## Cloudflare
 
 Production Workers Builds trigger:

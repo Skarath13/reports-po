@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, ClipboardCheck } from 'lucide-react';
+import { Button } from './ui/button';
 
 function SectionReviewControl({
   label,
@@ -47,7 +48,9 @@ function SectionReviewControl({
           {updateLabel}
         </span>
       )}
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         type="button"
         className="section-signoff-btn"
         onClick={onSignOff}
@@ -57,7 +60,7 @@ function SectionReviewControl({
       >
         <ClipboardCheck size={14} />
         {state.loading ? 'Saving…' : isUpdate ? 'Sign off updates' : 'Sign off section'}
-      </button>
+      </Button>
       {state.error && <span className="section-review-error" role="alert">{state.error}</span>}
     </div>
   );
