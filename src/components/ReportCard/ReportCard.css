@@ -1,6 +1,7 @@
 .report-card {
   position: relative;
   min-width: 0;
+  container-type: inline-size;
   padding: 15px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -14,12 +15,12 @@
   margin-bottom: 12px;
 }
 .report-card-time {
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 550;
   font-variant-numeric: tabular-nums;
 }
 .report-card-tech {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
   overflow-wrap: anywhere;
   text-align: right;
@@ -32,12 +33,12 @@
 }
 .report-card-customer {
   min-width: 0;
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 500;
   overflow-wrap: anywhere;
 }
 .report-card-service {
-  font-size: 11px;
+  font-size: 0.9375rem;
   color: var(--muted-foreground);
   margin-top: 5px;
   overflow-wrap: anywhere;
@@ -46,7 +47,7 @@
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  font-size: 10px;
+  font-size: 0.875rem;
   padding: 2px 6px;
   border-radius: 4px;
   font-variant-numeric: tabular-nums;
@@ -58,7 +59,7 @@
   padding-top: 14px;
   border-top: 1px solid var(--border);
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .report-card.fixes {
   border-left: 2px solid var(--attention);
@@ -70,13 +71,13 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  font-size: 12px;
+  font-size: 1rem;
 }
 .report-card.cross-location .report-card-customer-row {
   padding-right: 24px;
 }
 .dup-summary {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--attention);
   margin-bottom: 7px;
 }
@@ -98,18 +99,18 @@
 }
 .dup-appt-time {
   color: var(--foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
 }
 .dup-appt-service {
   flex: 1;
   min-width: 100px;
-  font-size: 10px;
+  font-size: 0.875rem;
   overflow-wrap: anywhere;
 }
 .dup-appt-tech,
 .dup-appt-loc {
-  font-size: 9px;
+  font-size: 0.8125rem;
   padding: 2px 5px;
   border-radius: 4px;
   background: var(--secondary);
@@ -124,7 +125,7 @@
 }
 .report-note-entry {
   display: grid;
-  grid-template-columns: 80px minmax(0, 1fr);
+  grid-template-columns: 110px minmax(0, 1fr);
   align-items: start;
   gap: 9px;
 }
@@ -142,7 +143,7 @@
   background: var(--surface-raised);
   color: var(--text-secondary);
   padding: 3px 5px;
-  font-size: 8px;
+  font-size: 0.8125rem;
   font-weight: 500;
   letter-spacing: 0.03em;
   line-height: 1.4;
@@ -162,10 +163,19 @@
   margin: 0;
   min-width: 0;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 1rem;
   line-height: 1.65;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+@container (max-width: 360px) {
+  .report-note-entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+  .report-note-label {
+    justify-self: start;
+  }
 }
 .appointment-note-history {
   display: flex;
@@ -188,7 +198,7 @@
   align-items: center;
   gap: 7px;
   color: var(--positive);
-  font-size: 11px;
+  font-size: 0.9375rem;
   font-weight: 550;
   margin: 0;
 }
@@ -217,7 +227,7 @@
 .current-note-empty,
 .note-history-message {
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
   margin: 7px 0 0;
 }
 .note-trail {
@@ -257,13 +267,13 @@
 }
 .note-history-title {
   display: block;
-  font-size: 11px;
+  font-size: 0.9375rem;
   font-weight: 500;
   color: var(--text-secondary);
 }
 .note-history-count {
   display: block;
-  font-size: 9px;
+  font-size: 0.8125rem;
   font-weight: 400;
   color: var(--muted-foreground);
   margin-top: 3px;
@@ -339,7 +349,7 @@ button.note-trail-row:hover {
   gap: 6px;
 }
 .note-trail-row time {
-  font-size: 10px;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--foreground);
 }
@@ -348,7 +358,7 @@ button.note-trail-row:hover {
   border-radius: 4px;
   color: var(--positive);
   background: var(--positive-background);
-  font-size: 8px;
+  font-size: 0.8125rem;
   text-transform: uppercase;
 }
 .note-trail-status.cancelled {
@@ -361,7 +371,7 @@ button.note-trail-row:hover {
 }
 .note-trail-service {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
 }
 .note-trail-meta {
@@ -369,7 +379,7 @@ button.note-trail-row:hover {
   flex-wrap: wrap;
   gap: 3px 8px;
   margin-top: 3px;
-  font-size: 9px;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
 }
 .note-trail-meta span + span::before {
@@ -387,14 +397,14 @@ button.note-trail-row:hover {
   background: var(--surface-raised);
   padding: 2px 5px;
   border-radius: 4px;
-  font-size: 8px;
+  font-size: 0.8125rem;
 }
 .note-type-indicator.business {
   color: var(--selection-foreground);
   background: var(--selection-background);
 }
 .note-trail-empty {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
 }
 .note-trail-detail {
@@ -409,7 +419,7 @@ button.note-trail-row:hover {
   min-height: 38px;
   margin-top: 12px;
   padding: 8px;
-  font-size: 11px;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
   border: 1px solid var(--input);
   border-radius: 6px;
@@ -418,7 +428,7 @@ button.note-trail-row:hover {
 .note-history-error,
 .note-history-coverage {
   margin: 8px 0 0;
-  font-size: 10px;
+  font-size: 0.875rem;
   line-height: 1.5;
   color: var(--muted-foreground);
 }

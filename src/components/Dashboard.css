@@ -5,7 +5,7 @@
 .workspace-sidebar {
   position: fixed;
   inset: 0 auto 0 0;
-  width: 224px;
+  width: 264px;
   background: var(--sidebar);
   border-right: 1px solid var(--border);
   display: flex;
@@ -15,7 +15,7 @@
   z-index: 30;
 }
 .workspace-main {
-  margin-left: 224px;
+  margin-left: 264px;
   min-width: 0;
 }
 .workspace-brand {
@@ -48,7 +48,7 @@
 }
 .sidebar-label {
   padding: 0 12px 9px;
-  font-size: 10px;
+  font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.11em;
   color: var(--muted-foreground);
@@ -70,10 +70,14 @@
   background: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 1rem;
 }
 .nav-item > span:first-of-type {
   flex: 1;
+}
+.nav-item > svg,
+.sidebar-theme-toggle > svg {
+  flex-shrink: 0;
 }
 .nav-item:hover {
   background: var(--secondary);
@@ -86,7 +90,7 @@
 }
 .nav-count {
   color: var(--muted-foreground);
-  font-size: 10px;
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
 .nav-reviewed {
@@ -122,10 +126,10 @@
 .sidebar-updates strong,
 .sidebar-updates small {
   display: block;
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .sidebar-updates small {
-  font-size: 9px;
+  font-size: 0.8125rem;
   margin-top: 3px;
 }
 .sidebar-theme-toggle {
@@ -137,7 +141,7 @@
   padding: 10px 12px;
   color: var(--text-secondary);
   border-radius: 8px;
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .sidebar-theme-toggle:hover {
   background: var(--secondary);
@@ -178,7 +182,7 @@
   border: 1px solid var(--border);
   border-radius: 9px;
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .sidebar-review svg {
   margin-top: 2px;
@@ -186,7 +190,7 @@
 .sidebar-review strong {
   display: block;
   color: var(--foreground);
-  font-size: 12px;
+  font-size: 1rem;
   margin-top: 3px;
   font-weight: 550;
 }
@@ -204,7 +208,7 @@
   transition: width 0.2s;
 }
 .sidebar-review small {
-  font-size: 10px;
+  font-size: 0.875rem;
 }
 .sidebar-footer {
   margin-top: auto;
@@ -215,7 +219,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 0.9375rem;
   padding: 12px;
   text-decoration: none;
 }
@@ -229,7 +233,7 @@
   padding: 16px 4px 0;
   border-top: 1px solid var(--border);
   margin-top: 10px;
-  font-size: 12px;
+  font-size: 1rem;
 }
 .sidebar-user > span:nth-child(2) {
   flex: 1;
@@ -238,7 +242,7 @@
 }
 .sidebar-user small {
   display: block;
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
 }
 .user-avatar {
@@ -249,7 +253,7 @@
   border: 1px solid var(--border-strong);
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: 0.9375rem;
   flex-shrink: 0;
 }
 .skip-link {
@@ -268,6 +272,7 @@
 }
 .report-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   min-height: 62px;
@@ -282,7 +287,7 @@
   gap: 12px;
 }
 .header-breadcrumb {
-  font-size: 12px;
+  font-size: 1rem;
   color: var(--muted-foreground);
 }
 .header-breadcrumb strong {
@@ -290,18 +295,19 @@
   color: var(--foreground);
 }
 .header-sync {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
 }
 .header-right [data-slot='button'] {
-  font-size: 11px;
-  height: 32px;
+  font-size: 0.9375rem;
+  height: 38px;
 }
 .mobile-menu[data-slot='button'] {
   display: none;
 }
 .workspace-heading {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
@@ -310,12 +316,12 @@
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 9px;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
   font-weight: 550;
 }
 .workspace-heading h1 {
-  font-size: 27px;
+  font-size: 2rem;
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: -0.85px;
@@ -323,7 +329,7 @@
   outline: none;
 }
 .workspace-heading p {
-  font-size: 11px;
+  font-size: 0.9375rem;
   color: var(--muted-foreground);
   margin: 0;
 }
@@ -345,8 +351,9 @@
   background: transparent;
   border-radius: 5px;
   padding: 6px 13px;
+  min-height: 36px;
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .date-toggle button.active {
   background: var(--surface-raised);
@@ -371,7 +378,7 @@
   border-radius: 8px;
   padding: 10px 14px;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 1rem;
   color: var(--text-secondary);
   transition:
     background 0.12s,
@@ -429,18 +436,18 @@
   gap: 10px;
   align-items: center;
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .metric-card strong {
   display: block;
-  font-size: 28px;
+  font-size: 2rem;
   font-weight: 550;
   letter-spacing: -0.8px;
   font-variant-numeric: tabular-nums;
   margin: 6px 0 1px;
 }
 .metric-denominator {
-  font-size: 16px;
+  font-size: 1.25rem;
   color: var(--muted-foreground);
   letter-spacing: 0;
   font-weight: 400;
@@ -448,7 +455,7 @@
 .metric-card small {
   display: block;
   color: var(--muted-foreground);
-  font-size: 10px;
+  font-size: 0.875rem;
 }
 .report-section {
   border: 1px solid var(--border);
@@ -456,6 +463,7 @@
   background: var(--card);
   margin-bottom: 24px;
   min-width: 0;
+  container-type: inline-size;
 }
 .section-header {
   display: flex;
@@ -473,7 +481,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 14px;
+  font-size: 1.125rem;
   line-height: 1.45;
   font-weight: 550;
   letter-spacing: -0.15px;
@@ -486,7 +494,7 @@
 .section-heading p {
   margin: 5px 0 0;
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .section-header-controls,
 .section-actions,
@@ -500,8 +508,8 @@
   margin-left: auto;
 }
 .section-actions .privacy-btn {
-  font-size: 10px;
-  height: 30px;
+  font-size: 0.875rem;
+  height: 38px;
   padding: 0 9px;
   gap: 5px;
 }
@@ -510,9 +518,9 @@
   height: 13px;
 }
 .section-signoff-btn[data-slot='button'] {
-  font-size: 10px;
+  font-size: 0.875rem;
   font-weight: 500;
-  height: 30px;
+  height: 38px;
   padding: 0 9px;
   border-color: var(--input);
 }
@@ -522,7 +530,7 @@
   align-items: center;
   gap: 5px;
   padding: 5px 8px;
-  font-size: 10px;
+  font-size: 0.875rem;
   white-space: nowrap;
 }
 .section-review-state.complete {
@@ -539,7 +547,7 @@
   color: var(--destructive);
 }
 .section-review-error {
-  font-size: 11px;
+  font-size: 0.9375rem;
   max-width: 260px;
 }
 .section-update-count {
@@ -554,7 +562,7 @@
 .section-empty-state {
   padding: 26px 20px;
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 1rem;
 }
 .schedule-toolbar {
   display: flex;
@@ -567,26 +575,28 @@
 .schedule-search {
   position: relative;
   min-width: 190px;
-  width: 260px;
+  width: 290px;
 }
 .schedule-search > svg {
   position: absolute;
   left: 10px;
-  top: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--muted-foreground);
   pointer-events: none;
 }
 .schedule-search input {
-  height: 34px;
+  height: 42px;
   padding-left: 32px;
   padding-right: 30px;
-  font-size: 11px;
+  font-size: 1rem;
   background: var(--surface-subtle);
 }
 .schedule-search > button {
   position: absolute;
   right: 2px;
-  top: 2px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 30px;
   height: 30px;
   display: grid;
@@ -595,11 +605,11 @@
   border-radius: 5px;
 }
 .schedule-toolbar select {
-  height: 34px;
+  height: 42px;
   padding: 0 28px 0 10px;
-  min-width: 130px;
-  max-width: 200px;
-  font-size: 11px;
+  min-width: 170px;
+  max-width: 240px;
+  font-size: 1rem;
   background: var(--surface-subtle);
   color: var(--foreground);
   border: 1px solid var(--input);
@@ -613,17 +623,17 @@
   border-radius: 7px;
 }
 .schedule-view-toggle [data-slot='button'] {
-  height: 28px;
-  font-size: 10px;
+  height: 36px;
+  font-size: 0.875rem;
 }
 .schedule-table {
   table-layout: auto;
   width: 100%;
 }
 .schedule-table th {
-  height: 36px;
+  height: 44px;
   padding: 0 16px;
-  font-size: 10px;
+  font-size: 0.875rem;
   font-weight: 450;
   color: var(--muted-foreground);
   background: var(--surface-subtle);
@@ -638,7 +648,7 @@
   opacity: 0.65;
 }
 .schedule-table th:nth-child(1) {
-  width: 100px;
+  width: 7rem;
 }
 .schedule-table th:last-child {
   width: 86px;
@@ -649,8 +659,8 @@
 .schedule-table th:nth-last-child(3) {
   width: 116px;
 }
-.schedule-table th:nth-child(2):not(:nth-last-child(3)) {
-  width: auto;
+.schedule-table:not(.names-hidden) th:nth-child(2) {
+  width: 22%;
 }
 .schedule-table.names-hidden th:nth-child(2) {
   width: auto;
@@ -665,7 +675,7 @@
 }
 .schedule-table .appointment-row td {
   padding: 13px 16px;
-  font-size: 12px;
+  font-size: 1rem;
   vertical-align: middle;
   white-space: normal;
 }
@@ -696,7 +706,7 @@
   overflow-wrap: anywhere;
 }
 .likelihood-pct {
-  font-size: 8px;
+  font-size: 0.8125rem;
   margin-left: 4px;
   top: -0.3em;
   cursor: help;
@@ -712,7 +722,7 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: 0.875rem;
   line-height: 1.6;
   border-radius: 4px;
   font-variant-numeric: tabular-nums;
@@ -778,7 +788,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 12px 20px;
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
   border-top: 1px solid var(--border);
 }
@@ -789,19 +799,19 @@
   flex-direction: column;
   gap: 8px;
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 1rem;
 }
 .schedule-empty strong {
   color: var(--foreground);
   font-weight: 500;
 }
 .schedule-empty [data-slot='button'] {
-  font-size: 11px;
+  font-size: 0.9375rem;
   margin-top: 5px;
 }
 .calendar-grid-2col {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 450px), 1fr));
   gap: 16px;
   padding: 18px;
 }
@@ -822,7 +832,7 @@
   border-bottom: 1px solid var(--border);
 }
 .tech-name {
-  font-size: 12px;
+  font-size: 1rem;
   font-weight: 550;
 }
 .tech-header-right {
@@ -831,18 +841,18 @@
   align-items: center;
 }
 .tech-count {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
 }
 .tech-appointments .appointment-row {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) auto;
+  grid-template-columns: max-content minmax(0, 1fr) auto;
   grid-template-areas: 'time customer actions' 'service service badges';
   padding: 12px;
   gap: 7px;
   position: relative;
   border-bottom: 1px solid var(--border);
-  font-size: 11px;
+  font-size: 1rem;
   align-items: center;
 }
 .tech-appointments .appointment-row > span {
@@ -875,18 +885,35 @@
 .apt-row-actions {
   text-align: right;
 }
-@container (min-width: 600px) {
+@container (max-width: 360px) {
   .tech-appointments .appointment-row {
-    grid-template-columns: 72px minmax(130px, 1fr) minmax(
-        180px,
-        1.4fr
-      ) auto auto;
-    grid-template-areas: 'time customer service badges actions';
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'time actions'
+      'customer customer'
+      'service service'
+      'badges badges';
   }
   .tech-appointments .appointment-row.hide-names {
-    grid-template-columns: 72px minmax(180px, 1fr) auto auto;
+    grid-template-areas:
+      'time actions'
+      'service service'
+      'badges badges';
+  }
+}
+@container (min-width: 600px) {
+  .tech-appointments .appointment-row.hide-names {
+    grid-template-columns: max-content minmax(180px, 1fr) auto auto;
     grid-template-areas: 'time service badges actions';
+  }
+}
+@container (min-width: 720px) {
+  .tech-appointments .appointment-row {
+    grid-template-columns:
+      max-content minmax(130px, 1fr) minmax(180px, 1.4fr)
+      auto auto;
+    grid-template-areas: 'time customer service badges actions';
+    align-items: center;
   }
 }
 .card-grid {
@@ -896,7 +923,7 @@
   padding: 18px;
 }
 .notes-card-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   align-items: start;
 }
 .staff-chips {
@@ -915,13 +942,13 @@
 }
 .staff-name {
   display: block;
-  font-size: 12px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .first-apt {
   display: block;
   margin-top: 3px;
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
 }
 .review-update-cue {
@@ -952,7 +979,7 @@
 }
 .report-footer {
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
   padding: 0 2px 8px;
 }
@@ -984,7 +1011,7 @@
   border-radius: 10px;
   background: var(--destructive-background);
   color: var(--destructive);
-  font-size: 12px;
+  font-size: 1rem;
 }
 .error-state [data-slot='button'] {
   margin-left: auto;
@@ -993,8 +1020,8 @@
   animation: spin 1s linear infinite;
 }
 .appointment-detail[data-slot='sheet-content'] {
-  width: min(100%, 500px);
-  max-width: 500px;
+  width: min(100%, 560px);
+  max-width: 560px;
   background: var(--card);
   border-color: var(--border-strong);
   gap: 0;
@@ -1005,14 +1032,14 @@
   padding-right: 64px;
 }
 .appointment-detail [data-slot='sheet-title'] {
-  font-size: 22px;
+  font-size: 1.625rem;
   font-weight: 550;
   letter-spacing: -0.5px;
   margin: 4px 0;
   overflow-wrap: anywhere;
 }
 .appointment-detail [data-slot='sheet-description'] {
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .appointment-detail-body {
   padding: 24px;
@@ -1022,7 +1049,7 @@
 }
 .detail-refresh-status {
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .detail-booking {
   padding-bottom: 22px;
@@ -1030,12 +1057,12 @@
   border-bottom: 1px solid var(--border);
 }
 .detail-booking h3 {
-  font-size: 14px;
+  font-size: 1.125rem;
   font-weight: 500;
   overflow-wrap: anywhere;
 }
 .detail-booking p {
-  font-size: 12px;
+  font-size: 1rem;
   color: var(--muted-foreground);
   margin: 5px 0 12px;
 }
@@ -1045,7 +1072,7 @@
   gap: 8px;
 }
 .detail-booking [data-slot='badge'] {
-  font-size: 10px;
+  font-size: 0.875rem;
   white-space: nowrap;
 }
 .detail-risk {
@@ -1054,7 +1081,7 @@
   padding: 12px;
   margin-bottom: 20px;
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .detail-risk summary {
   cursor: pointer;
@@ -1125,12 +1152,12 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 16px;
+  font-size: 1.25rem;
   font-weight: 550;
 }
 .audit-panel-header p {
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 0.9375rem;
   margin-top: 6px;
 }
 .audit-close-btn,
@@ -1142,7 +1169,7 @@
   padding: 8px;
   border: 1px solid var(--input);
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 0.9375rem;
   background: var(--secondary);
 }
 .audit-toolbar {
@@ -1153,10 +1180,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 11px;
+  font-size: 0.9375rem;
   color: var(--muted-foreground);
 }
 .audit-toolbar input {
+  font-size: 1rem;
   padding: 6px 9px;
   border: 1px solid var(--input);
   border-radius: 6px;
@@ -1168,7 +1196,7 @@
 }
 .audit-empty {
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 1rem;
   padding: 20px 0;
 }
 .audit-summary {
@@ -1184,11 +1212,11 @@
 }
 .audit-summary strong {
   display: block;
-  font-size: 23px;
+  font-size: 1.75rem;
   font-weight: 500;
 }
 .audit-summary span {
-  font-size: 11px;
+  font-size: 0.9375rem;
   color: var(--muted-foreground);
 }
 .audit-section {
@@ -1199,7 +1227,7 @@
   color: var(--text-secondary);
 }
 .audit-section-title h3 {
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .audit-matrix-wrap {
@@ -1210,7 +1238,7 @@
 .audit-table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .audit-table th,
 .audit-table td {
@@ -1238,7 +1266,7 @@
 }
 .audit-complete span {
   display: block;
-  font-size: 10px;
+  font-size: 0.875rem;
   margin-top: 4px;
 }
 .audit-pending {
@@ -1268,7 +1296,7 @@
 }
 .audit-list {
   display: grid;
-  font-size: 11px;
+  font-size: 0.9375rem;
 }
 .audit-list-row {
   justify-content: space-between;
@@ -1302,14 +1330,6 @@
   }
 }
 @media (max-width: 1199px) {
-  .workspace-sidebar {
-    width: 206px;
-    padding-left: 9px;
-    padding-right: 9px;
-  }
-  .workspace-main {
-    margin-left: 206px;
-  }
   .report-header {
     padding-left: 22px;
     padding-right: 22px;
@@ -1343,17 +1363,11 @@
     padding-left: 10px;
     padding-right: 10px;
   }
-  .schedule-table th:nth-child(1) {
-    width: 88px;
-  }
   .schedule-table th:nth-last-child(2) {
     width: 122px;
   }
   .schedule-table th:nth-last-child(3) {
     width: 94px;
-  }
-  .calendar-grid-2col {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr));
   }
 }
 @media (max-width: 899px) {
@@ -1372,7 +1386,7 @@
     gap: 8px;
   }
   .workspace-heading h1 {
-    font-size: 25px;
+    font-size: 1.875rem;
   }
   .overview-metrics {
     gap: 10px;
@@ -1393,7 +1407,7 @@
     gap: 4px;
   }
   .header-right [data-slot='button'] {
-    font-size: 10px;
+    font-size: 0.875rem;
     padding: 0 8px;
   }
   .header-breadcrumb > span {
@@ -1405,19 +1419,19 @@
     padding: 22px 16px 16px;
   }
   .workspace-heading h1 {
-    font-size: 23px;
+    font-size: 1.75rem;
   }
   .workspace-heading p {
-    font-size: 10px;
+    font-size: 0.875rem;
   }
   .eyebrow {
-    font-size: 8px;
+    font-size: 0.8125rem;
   }
   .date-toggle {
-    margin-top: 18px;
+    margin-top: 0;
   }
   .date-toggle button {
-    font-size: 10px;
+    font-size: 0.875rem;
     padding: 6px 8px;
   }
   .location-tabs {
@@ -1427,7 +1441,7 @@
     gap: 7px;
   }
   .location-tab {
-    font-size: 11px;
+    font-size: 0.9375rem;
     min-height: 44px;
     padding: 9px 10px;
   }
@@ -1445,7 +1459,7 @@
     padding: 12px 10px;
   }
   .metric-card > div {
-    font-size: 10px;
+    font-size: 0.875rem;
     line-height: 1.35;
     min-height: 28px;
     align-items: flex-start;
@@ -1454,14 +1468,14 @@
     display: none;
   }
   .metric-card strong {
-    font-size: 23px;
+    font-size: 1.75rem;
     margin-top: 8px;
   }
   .metric-card small {
     display: none;
   }
   .metric-denominator {
-    font-size: 13px;
+    font-size: 1rem;
   }
   .report-section {
     margin-bottom: 18px;
@@ -1471,14 +1485,14 @@
     gap: 12px;
   }
   .section-title {
-    font-size: 13px;
+    font-size: 1rem;
   }
   .section-title svg {
     width: 16px;
     height: 16px;
   }
   .section-heading p {
-    font-size: 10px;
+    font-size: 0.875rem;
   }
   .section-header-controls {
     gap: 8px;
@@ -1496,88 +1510,29 @@
     width: 100%;
   }
   .schedule-search input {
-    height: 38px;
-    font-size: 12px;
-  }
-  .schedule-search > svg {
-    top: 12px;
-  }
-  .schedule-search > button {
-    top: 4px;
+    height: 42px;
+    font-size: 1rem;
   }
   .schedule-toolbar select {
-    max-width: 48%;
-    min-width: 0;
-    flex: 1;
-    height: 36px;
-    font-size: 10px;
+    max-width: 100%;
+    min-width: 170px;
+    flex: 1 1 170px;
+    height: 42px;
+    font-size: 1rem;
   }
   .schedule-view-toggle {
     margin-left: auto;
   }
   .schedule-view-toggle [data-slot='button'] {
-    height: 30px;
-    font-size: 10px;
+    height: 36px;
+    font-size: 0.875rem;
     padding: 0 7px;
   }
   .schedule-view-toggle svg {
     width: 13px;
   }
-  .schedule-table {
-    display: block;
-  }
-  .schedule-table thead {
-    display: none;
-  }
-  .schedule-table tbody {
-    display: block;
-  }
-  .schedule-table .appointment-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: 'time actions' 'client client' 'service service' 'tech badges';
-    gap: 6px 10px;
-    padding: 14px;
-  }
-  .schedule-table .appointment-row.hide-names {
-    grid-template-areas: 'time actions' 'service service' 'tech badges';
-  }
-  .schedule-table .appointment-row td {
-    padding: 0;
-    font-size: 12px;
-  }
-  .schedule-table .apt-time {
-    grid-area: time;
-    align-self: center;
-  }
-  .schedule-table .apt-customer {
-    grid-area: client;
-    font-size: 13px !important;
-  }
-  .schedule-table .apt-service {
-    grid-area: service;
-    font-size: 11px !important;
-    padding-bottom: 5px !important;
-  }
-  .schedule-table .apt-technician {
-    grid-area: tech;
-    font-size: 10px !important;
-    align-self: center;
-  }
-  .schedule-table .apt-badges {
-    grid-area: badges;
-  }
-  .schedule-table .apt-row-actions {
-    grid-area: actions;
-    padding: 0 !important;
-  }
-  .row-copy-btn,
-  .row-detail-btn {
-    width: 36px;
-    height: 32px;
-  }
   .schedule-caption {
-    font-size: 9px;
+    font-size: 0.8125rem;
     padding: 12px;
   }
   .card-grid,
@@ -1589,14 +1544,11 @@
   .calendar-grid-2col {
     padding: 12px;
   }
-  .tech-appointments .appointment-row {
-    grid-template-columns: 69px minmax(0, 1fr) auto;
-  }
   .tech-appointments .apt-badges-inner {
     justify-content: flex-end;
   }
   .report-footer {
-    font-size: 9px;
+    font-size: 0.8125rem;
     line-height: 1.7;
     gap: 12px;
   }
@@ -1626,19 +1578,111 @@
     padding: 9px;
   }
   .audit-summary strong {
-    font-size: 18px;
+    font-size: 1.375rem;
   }
   .audit-summary span {
-    font-size: 9px;
+    font-size: 0.8125rem;
   }
   .audit-detail-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+@container (max-width: 780px) {
+  .schedule-table {
+    display: block;
+  }
+  .schedule-table thead {
+    display: none;
+  }
+  .schedule-table tbody {
+    display: block;
+  }
+  .schedule-table .appointment-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'time actions' 'client client' 'service service' 'tech badges';
+    gap: 6px 10px;
+    padding: 14px;
+  }
+  .schedule-table .appointment-row.hide-names {
+    grid-template-areas: 'time actions' 'service service' 'tech badges';
+  }
+  .schedule-table .appointment-row td {
+    padding: 0;
+    font-size: 1rem;
+  }
+  .schedule-table .apt-time {
+    grid-area: time;
+    align-self: center;
+  }
+  .schedule-table .apt-customer {
+    grid-area: client;
+    font-size: 1rem !important;
+  }
+  .schedule-table .apt-service {
+    grid-area: service;
+    font-size: 1rem !important;
+    padding-bottom: 5px !important;
+  }
+  .schedule-table .apt-technician {
+    grid-area: tech;
+    font-size: 0.875rem !important;
+    align-self: center;
+  }
+  .schedule-table .apt-badges {
+    grid-area: badges;
+  }
+  .schedule-table .apt-row-actions {
+    grid-area: actions;
+    padding: 0 !important;
+  }
+  .schedule-table .row-copy-btn,
+  .schedule-table .row-detail-btn {
+    width: 36px;
+    height: 32px;
+  }
+}
+@container (min-width: 600px) and (max-width: 780px) {
+  .schedule-table .appointment-row {
+    grid-template-columns: 6rem minmax(0, 1fr) auto;
+    grid-template-areas: 'time client actions' 'tech service badges';
+    gap: 8px 14px;
+    padding: 16px;
+  }
+  .schedule-table .appointment-row.hide-names {
+    grid-template-areas: 'time service actions' 'tech badges badges';
+  }
+  .schedule-table .apt-technician {
+    font-size: 0.9375rem !important;
+  }
+  .schedule-table .apt-service {
+    padding-bottom: 0 !important;
+  }
+  .schedule-table .apt-badges-inner {
+    justify-content: flex-end;
+  }
+}
 @media (min-width: 640px) and (max-width: 899px) {
   .calendar-grid-2col {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+  }
+}
+@media (max-width: 479px) {
+  .overview-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .metric-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .metric-card > div {
+    min-height: 0;
+  }
+  .metric-card strong {
+    flex-shrink: 0;
+    margin: 0;
   }
 }
 @media (pointer: coarse) {
@@ -1692,7 +1736,7 @@
     display: none;
   }
   .workspace-heading h1 {
-    font-size: 22px;
+    font-size: 1.625rem;
     margin: 0 0 3px;
   }
   .report-content {
