@@ -109,20 +109,7 @@ class ReportsAPIClient {
     this.setToken(null);
   }
 
-  // Locations
-  async getLocations() {
-    return this.request('/locations');
-  }
-
   // Reports
-  async getDailyReport(date, locationId) {
-    return this.request(`/daily/${date}/${locationId}`);
-  }
-
-  async getManagerReport(date, locationId) {
-    return this.request(`/manager/${date}/${locationId}`);
-  }
-
   async getFullReport(date, locationId, { signal } = {}) {
     return this.request(`/full/${date}/${locationId}`, {
       signal,
@@ -140,18 +127,6 @@ class ReportsAPIClient {
     return this.request(
       `/full/${date}/${locationId}/${encodeURIComponent(appointmentId)}/note-history?${query.toString()}`
     );
-  }
-
-  async getMySignoff(date, locationId) {
-    const query = new URLSearchParams({ date, locationId });
-    return this.request(`/governance/signoffs?${query.toString()}`);
-  }
-
-  async submitSignoff(date, locationId) {
-    return this.request('/governance/signoffs', {
-      method: 'POST',
-      body: JSON.stringify({ reportDate: date, locationId }),
-    });
   }
 
   async getSectionReviews(date, locationId) {

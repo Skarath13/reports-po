@@ -135,6 +135,26 @@ const mount = () =>
   );
 const schedule = () => screen.getByRole('table', { name: 'Appointments' });
 
+test('keeps technician order and removes empty groups when filtering the grouped schedule', async () => {
+  fixture.report.technicians.push('No appointments');
+  fixture.report.byTechnician['No appointments'] = [];
+  mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+
+  expect(screen.getAllByRole('button', { name: /^Copy shown schedule for/ })
+    .map((button) => button.getAttribute('aria-label')))
+    .toEqual(['Copy shown schedule for Chloe', 'Copy shown schedule for Alice']);
+
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search schedule' }), {
+    target: { value: 'Natural' },
+  });
+  expect(screen.queryByRole('button', { name: 'Copy shown schedule for Chloe' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Copy shown schedule for Alice' }));
+  await waitFor(() => {
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('9:00 AM - Avery Chen - Natural Fill (14d)');
+  });
+});
+
 test('sorts and filters the schedule without changing the report totals or searching hidden names', async () => {
   mount();
   await screen.findByRole('button', { name: 'Sign off Calendar List View' });

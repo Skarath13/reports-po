@@ -39,6 +39,15 @@ describe('appointment row copy', () => {
       .toBe('9:15 AM - Natural Fill (15d)');
   });
 
+  test.each([
+    ['2026-01-15T17:15:00Z', '9:15 AM'],
+    ['2026-07-15T17:15:00Z', '10:15 AM'],
+    ['invalid-time', 'Invalid Date'],
+  ])('preserves Pacific time and malformed time labels for %s', (appointmentTime, time) => {
+    expect(formatAppointmentClipboardLine({ ...appointment, appointmentTime }, true, false))
+      .toBe(`${time} - Natural Fill (15d)`);
+  });
+
   test('copies one hidden-name row and confirms success in place', async () => {
     render(
       <AppointmentRow

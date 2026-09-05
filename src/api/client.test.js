@@ -59,11 +59,11 @@ describe('ReportsAPIClient auth failures', () => {
       }),
     });
 
-    await expect(api.getLocations()).rejects.toThrow('Token expired');
+    await expect(api.getFullReport('2026-09-05', 'test-location')).rejects.toThrow('Token expired');
 
     expect(authExpired).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('reportToken')).toBeNull();
-    expect(global.fetch).toHaveBeenCalledWith('/api/reports/locations', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith('/api/reports/full/2026-09-05/test-location', expect.objectContaining({
       headers: expect.objectContaining({
         'x-report-token': 'stale-token',
       }),

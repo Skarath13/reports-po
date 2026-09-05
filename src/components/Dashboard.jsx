@@ -97,16 +97,20 @@ function titleCase(name) {
     .join(' ');
 }
 
+const appointmentTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+  timeZone: 'America/Los_Angeles',
+});
+
 // Format time from ISO string (Pacific timezone)
 function formatTime(isoString) {
   if (!isoString) return '';
   const date = new Date(isoString);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'America/Los_Angeles',
-  });
+  return Number.isNaN(date.getTime())
+    ? 'Invalid Date'
+    : appointmentTimeFormatter.format(date);
 }
 
 // Get hour in Pacific time (for first-hour check)
@@ -804,36 +808,44 @@ function DashboardWorkspace({ user, onLogout }) {
                     />
                   );
                 }}
-                renderGroups={(appointments) => (
-                  <div className="calendar-grid-2col">
-                    {report.technicians
-                      ?.filter((technician) =>
-                        appointments.some(
-                          (appointment) =>
-                            appointment.technicianKey === technician,
-                        ),
-                      )
-                      .map((technician) => (
-                        <TechnicianColumn
-                          key={technician}
-                          name={cleanTechName(technician)}
-                          appointments={appointments.filter(
-                            (appointment) =>
-                              appointment.technicianKey === technician,
-                          )}
-                          hideNames={hideNames}
-                          showPrices={showPrices}
-                          likelihoodMap={likelihoodMap}
-                          snapshot={sectionSnapshots.calendar}
-                          reviewState={sectionStates.calendar}
-                          onUpdateSeen={(entry) =>
-                            acknowledgeEntry('calendar', entry)
-                          }
-                          onOpenDetails={openDetails}
-                        />
-                      ))}
-                  </div>
-                )}
+                renderGroups={(appointments) => {
+                  const appointmentsByTechnician = new Map();
+                  for (const appointment of appointments) {
+                    const group = appointmentsByTechnician.get(
+                      appointment.technicianKey,
+                    );
+                    if (group) group.push(appointment);
+                    else appointmentsByTechnician.set(
+                      appointment.technicianKey,
+                      [appointment],
+                    );
+                  }
+
+                  return (
+                    <div className="calendar-grid-2col">
+                      {report.technicians
+                        ?.filter((technician) =>
+                          appointmentsByTechnician.has(technician),
+                        )
+                        .map((technician) => (
+                          <TechnicianColumn
+                            key={technician}
+                            name={cleanTechName(technician)}
+                            appointments={appointmentsByTechnician.get(technician)}
+                            hideNames={hideNames}
+                            showPrices={showPrices}
+                            likelihoodMap={likelihoodMap}
+                            snapshot={sectionSnapshots.calendar}
+                            reviewState={sectionStates.calendar}
+                            onUpdateSeen={(entry) =>
+                              acknowledgeEntry('calendar', entry)
+                            }
+                            onOpenDetails={openDetails}
+                          />
+                        ))}
+                    </div>
+                  );
+                }}
               />
             ) : (
               <SectionEmptyState>
