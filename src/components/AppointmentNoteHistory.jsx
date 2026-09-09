@@ -119,6 +119,7 @@ export default function AppointmentNoteHistory({
   currentCustomerNote,
   currentSellerNote,
   isToday = true,
+  showHistory = true,
   initialAppointments = [],
   total = 0,
   noteCount = 0,
@@ -194,7 +195,7 @@ export default function AppointmentNoteHistory({
         )}
       </section>
 
-      <section className="note-trail" aria-labelledby={trailTitleId}>
+      <section className="note-trail" aria-labelledby={trailTitleId} hidden={!showHistory}>
         <h3 className="note-trail-heading">
           <button
             type="button"

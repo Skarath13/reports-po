@@ -7,6 +7,7 @@ export default function AppointmentNotes({
   date,
   locationId,
   isToday,
+  showHistory = true,
 }) {
   return (
     <>
@@ -18,6 +19,7 @@ export default function AppointmentNotes({
         currentCustomerNote={appointment.customerNote}
         currentSellerNote={appointment.sellerNote}
         isToday={isToday}
+        showHistory={showHistory}
         initialAppointments={appointment.appointmentNoteHistory || []}
         total={appointment.appointmentNoteHistoryTotal || 0}
         noteCount={appointment.appointmentNoteHistoryNoteCount || 0}

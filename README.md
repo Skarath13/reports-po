@@ -32,7 +32,9 @@ is the default for accounts without a saved interface choice. It restores the
 blue-and-white, single-page report layout from `4c9c625`; the calendar starts
 collapsed behind **Show schedule** so notes and exceptions are easy to reach.
 Both interfaces share the current report fetching, sign-offs, counters, change
-highlights, copy actions, appointment details, and note history.
+highlights, copy actions, appointment details, and current client/appointment notes.
+Past appointment history appears only in New, in both report cards and appointment
+details. Switching to Old hides history without clearing New's expanded history.
 
 The interface is saved with the existing user-scoped browser preferences. An
 explicit PIN-screen choice overrides that user's saved interface for this sign-in

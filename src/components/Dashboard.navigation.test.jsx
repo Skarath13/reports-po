@@ -197,9 +197,13 @@ test('sorts and filters the schedule without changing the report totals or searc
   expect(window.location.search).toBe('');
 });
 
-test('keeps current notes visible in the detail sheet, collapses history, and restores focus', async () => {
+test.each(['old', 'new'])('keeps current notes and focus behavior in %s details, with history only in New', async (mode) => {
   mount();
   await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  if (mode === 'old') {
+    fireEvent.click(screen.getByRole('button', { name: 'Old interface' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show schedule' }));
+  }
   const trigger = screen.getByRole('button', {
     name: 'View 9:00 AM appointment details',
   });
@@ -208,10 +212,16 @@ test('keeps current notes visible in the detail sheet, collapses history, and re
   expect(within(dialog).getByText('Current request')).toBeVisible();
   expect(within(dialog).getByText('Client preference')).toBeVisible();
   expect(within(dialog).getByText('Past request')).not.toBeVisible();
-  fireEvent.click(
-    within(dialog).getByRole('button', { name: /Past appointments/ }),
-  );
-  expect(within(dialog).getByText('Past request')).toBeVisible();
+  if (mode === 'new') {
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: /Past appointments/ }),
+    );
+    expect(within(dialog).getByText('Past request')).toBeVisible();
+  } else {
+    expect(within(dialog).queryByRole('button', { name: /Past appointments/ })).not.toBeInTheDocument();
+    expect(within(dialog).getByText('1 past appointment · 1 with notes')).not.toBeVisible();
+  }
+  expect(fixture.api.getAppointmentNoteHistory).not.toHaveBeenCalled();
   fireEvent.keyDown(dialog, { key: 'Escape' });
   await waitFor(() =>
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
@@ -581,7 +591,8 @@ test('switching preserves New filters, draft search, privacy, date, theme and ex
   const reviewsBeforeSwitch = fixture.api.getSectionReviews.mock.calls.length;
 
   fireEvent.click(screen.getByRole('button', { name: 'Old interface' }));
-  expect(history).toBeVisible();
+  expect(history).not.toBeVisible();
+  expect(screen.queryByRole('button', { name: /Past appointments/ })).not.toBeInTheDocument();
   expect(document.documentElement.dataset.theme).toBe('light');
   fireEvent.click(screen.getByRole('button', { name: 'Show schedule' }));
   expect(screen.getAllByRole('button', { name: /^Copy shown schedule for/ })).toHaveLength(2);

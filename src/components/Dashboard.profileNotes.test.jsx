@@ -100,7 +100,7 @@ vi.mock('../hooks/useReports', () => ({
 }));
 
 test('keeps profile and current notes visible above anyone-available bookings with history collapsed', async () => {
-  render(<Dashboard user={{ id: 'ross-id', username: 'Ross' }} onLogout={vi.fn()} />);
+  render(<Dashboard user={{ id: 'ross-id', username: 'Ross' }} onLogout={vi.fn()} initialInterfaceMode="new" />);
 
   expect(await screen.findByRole('heading', { name: 'Client & Appointment Notes' })).toBeInTheDocument();
   expect(screen.getByText('Client profile')).toBeInTheDocument();
@@ -117,6 +117,20 @@ test('keeps profile and current notes visible above anyone-available bookings wi
   fireEvent.click(screen.getByRole('button', { name: /Past appointments\s*1 past appointment/ }));
   expect(screen.getByText('Historic business detail')).toBeVisible();
   expect(screen.getByText('Current appointment request')).toBeVisible();
+});
+
+test('Old shows profile and current notes without prior-note controls, counts or content', async () => {
+  render(<Dashboard user={{ id: 'ross-id', username: 'Ross' }} onLogout={vi.fn()} initialInterfaceMode="old" />);
+  expect(await screen.findByText('Persistent profile preference')).toBeVisible();
+  expect(screen.getByText('Current appointment request')).toBeVisible();
+  expect(screen.getByText('Current business detail')).toBeVisible();
+  expect(screen.queryByRole('button', { name: /Past appointments/ })).not.toBeInTheDocument();
+  expect(screen.getByText('1 past appointment · 1 with notes')).not.toBeVisible();
+  expect(screen.getByText('Historic business detail')).not.toBeVisible();
+
+  fireEvent.click(screen.getByRole('button', { name: 'New interface' }));
+  fireEvent.click(screen.getByRole('button', { name: /Past appointments\s*1 past appointment/ }));
+  expect(screen.getByText('Historic business detail')).toBeVisible();
 });
 
 test('uses a date-neutral current-note heading for tomorrow\'s report', async () => {

@@ -941,6 +941,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                         date={selectedDate}
                         locationId={location.squareId}
                         isToday={isToday}
+                        showHistory={!isOld}
                       />
                     </ReportCard>
                   );
@@ -1341,6 +1342,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                   date={selectedDate}
                   locationId={location.squareId}
                   isToday={isToday}
+                  showHistory={!isOld}
                 />
               </div>
             </>
