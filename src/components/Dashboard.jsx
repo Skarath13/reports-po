@@ -32,6 +32,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 import { ReportCard } from './ReportCard';
 import AppointmentNotes from './AppointmentNotes';
@@ -58,6 +59,7 @@ import {
   getReportAppointmentPriceBadge,
 } from '../utils/reportPricing';
 import './Dashboard.css';
+import './ClassicDashboard.css';
 
 const KATELYN_AUDIT_VIEWER_ID = '9dee6da3-789a-46de-88f2-128385b2a4c0';
 
@@ -342,18 +344,24 @@ function getStaffSnapshotEntry(snapshot, technicianName) {
   );
 }
 
-function Dashboard({ user, onLogout }) {
+function Dashboard({ user, onLogout, initialInterfaceMode }) {
   return (
     <DashboardWorkspace
       key={dashboardUserKey(user) || 'anonymous'}
       user={user}
       onLogout={onLogout}
+      initialInterfaceMode={initialInterfaceMode}
     />
   );
 }
 
-function DashboardWorkspace({ user, onLogout }) {
-  const [preferences, updatePreferences] = useDashboardPreferences(user);
+function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
+  const [preferences, updatePreferences] = useDashboardPreferences(
+    user,
+    initialInterfaceMode,
+  );
+  const isOld = preferences.interfaceMode === 'old';
+  const [classicScheduleOpen, setClassicScheduleOpen] = useState(false);
   const {
     location: selectedLocation,
     hideNames,
@@ -570,7 +578,7 @@ function DashboardWorkspace({ user, onLogout }) {
     setDetailSelection({ id: appointment.id, context: reportContext });
   };
   const sectionVisible = (key) =>
-    activeSection === 'overview' || activeSection === key;
+    isOld || activeSection === 'overview' || activeSection === key;
   const navCounts =
     !report || loading || error
       ? {}
@@ -614,6 +622,11 @@ function DashboardWorkspace({ user, onLogout }) {
       }}
       theme={preferences.theme}
       onThemeChange={(theme) => updatePreferences({ theme })}
+      interfaceMode={preferences.interfaceMode}
+      onInterfaceChange={(interfaceMode) => {
+        updatePreferences({ interfaceMode });
+        setDetailSelection(null);
+      }}
       unreadSections={unreadSections}
       counts={navCounts}
       sectionStates={sectionStates}
@@ -628,8 +641,8 @@ function DashboardWorkspace({ user, onLogout }) {
           key={`${selectedLocation}:${selectedDate}`}
           locationName={location?.name}
           dateLabel={isToday ? 'Today' : 'Tomorrow'}
-          section={activeSection}
-          layout={preferences.scheduleView}
+          section={isOld ? 'notes' : activeSection}
+          layout={isOld ? 'grouped' : preferences.scheduleView}
         />
       )}
       {error && !loading && (
@@ -658,7 +671,7 @@ function DashboardWorkspace({ user, onLogout }) {
           <div
             className="overview-metrics"
             aria-label="Report summary"
-            hidden={activeSection !== 'overview'}
+            hidden={isOld || activeSection !== 'overview'}
           >
             <div className="metric-card">
               <div>
@@ -705,13 +718,20 @@ function DashboardWorkspace({ user, onLogout }) {
             </div>
           </div>
           <section
+            id="report-section-calendar"
             className="report-section"
             hidden={!sectionVisible('calendar')}
           >
             <ReviewableSectionHeader
               title="Calendar List View"
+              count={navCounts.calendar}
               icon={<CalendarDays size={18} />}
-              description="Schedule, booking details and client context in one place."
+              description={
+                isOld ? undefined : 'Schedule, booking details and client context in one place.'
+              }
+              onRevealContent={
+                isOld ? () => setClassicScheduleOpen(true) : undefined
+              }
               state={sectionStates.calendar}
               isToday={isToday}
               statusLoading={sectionReviewsLoading}
@@ -721,10 +741,27 @@ function DashboardWorkspace({ user, onLogout }) {
               formatDateTime={formatPacificDateTime}
             >
               <div className="section-actions">
+                {isOld && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-expanded={classicScheduleOpen}
+                    aria-controls="calendar-content"
+                    onClick={() => setClassicScheduleOpen((open) => !open)}
+                  >
+                    {classicScheduleOpen ? (
+                      <ChevronDown size={16} />
+                    ) : (
+                      <ChevronRight size={16} />
+                    )}
+                    {classicScheduleOpen ? 'Hide schedule' : 'Show schedule'}
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
                   className={`privacy-btn price-toggle ${showPrices ? 'active' : ''}`}
+                  hidden={isOld && !classicScheduleOpen}
                   onClick={() => setShowPrices(!showPrices)}
                   aria-pressed={showPrices}
                 >
@@ -735,6 +772,7 @@ function DashboardWorkspace({ user, onLogout }) {
                   variant="outline"
                   size="sm"
                   className={`privacy-btn ${hideNames ? 'active' : ''}`}
+                  hidden={isOld && !classicScheduleOpen}
                   onClick={() => {
                     setHideNames(!hideNames);
                     setDetailSelection(null);
@@ -754,112 +792,117 @@ function DashboardWorkspace({ user, onLogout }) {
                 </Button>
               </div>
             </ReviewableSectionHeader>
-            {report.totalAppointments > 0 ? (
-              <ScheduleBrowser
-                key={`${reportContext}:${hideNames}`}
-                appointments={scheduleAppointments}
-                hideNames={hideNames}
-                view={preferences.scheduleView}
-                onViewChange={(scheduleView) =>
-                  updatePreferences({ scheduleView })
-                }
-                sorting={preferences.sorting}
-                onSortingChange={(next) =>
-                  updatePreferences((current) => ({
-                    sorting:
-                      typeof next === 'function'
-                        ? next(current.sorting)
-                        : next,
-                  }))
-                }
-                technician={
-                  preferences.technicians[selectedLocation] || 'all'
-                }
-                onTechnicianChange={(technician) =>
-                  updatePreferences((current) => ({
-                    technicians: {
-                      ...current.technicians,
-                      [selectedLocation]: technician,
-                    },
-                  }))
-                }
-                renderRow={(appointment) => {
-                  const entry = getAppointmentSnapshotEntry(
-                    sectionSnapshots.calendar,
-                    appointment.id,
-                  );
-                  return (
-                    <AppointmentRow
-                      key={appointment.id}
-                      appointment={appointment}
-                      hideNames={hideNames}
-                      showPrices={showPrices}
-                      likelihoodMap={likelihoodMap}
-                      asTableRow
-                      onOpenDetails={openDetails}
-                      reviewEntry={entry}
-                      isUpdated={Boolean(
-                        entry &&
-                          sectionStates.calendar?.unseenEntries.has(
-                            entry.entryKey,
-                          ),
-                      )}
-                      onUpdateSeen={() => acknowledgeEntry('calendar', entry)}
-                    />
-                  );
-                }}
-                renderGroups={(appointments) => {
-                  const appointmentsByTechnician = new Map();
-                  for (const appointment of appointments) {
-                    const group = appointmentsByTechnician.get(
-                      appointment.technicianKey,
-                    );
-                    if (group) group.push(appointment);
-                    else appointmentsByTechnician.set(
-                      appointment.technicianKey,
-                      [appointment],
-                    );
+            <div id="calendar-content" hidden={isOld && !classicScheduleOpen}>
+              {report.totalAppointments > 0 ? (
+                <ScheduleBrowser
+                  key={`${reportContext}:${hideNames}`}
+                  classic={isOld}
+                  appointments={scheduleAppointments}
+                  hideNames={hideNames}
+                  view={preferences.scheduleView}
+                  onViewChange={(scheduleView) =>
+                    updatePreferences({ scheduleView })
                   }
+                  sorting={preferences.sorting}
+                  onSortingChange={(next) =>
+                    updatePreferences((current) => ({
+                      sorting:
+                        typeof next === 'function'
+                          ? next(current.sorting)
+                          : next,
+                    }))
+                  }
+                  technician={
+                    preferences.technicians[selectedLocation] || 'all'
+                  }
+                  onTechnicianChange={(technician) =>
+                    updatePreferences((current) => ({
+                      technicians: {
+                        ...current.technicians,
+                        [selectedLocation]: technician,
+                      },
+                    }))
+                  }
+                  renderRow={(appointment) => {
+                    const entry = getAppointmentSnapshotEntry(
+                      sectionSnapshots.calendar,
+                      appointment.id,
+                    );
+                    return (
+                      <AppointmentRow
+                        key={appointment.id}
+                        appointment={appointment}
+                        hideNames={hideNames}
+                        showPrices={showPrices}
+                        likelihoodMap={likelihoodMap}
+                        asTableRow
+                        onOpenDetails={openDetails}
+                        reviewEntry={entry}
+                        isUpdated={Boolean(
+                          entry &&
+                            sectionStates.calendar?.unseenEntries.has(
+                              entry.entryKey,
+                            ),
+                        )}
+                        onUpdateSeen={() => acknowledgeEntry('calendar', entry)}
+                      />
+                    );
+                  }}
+                  renderGroups={(appointments) => {
+                    const appointmentsByTechnician = new Map();
+                    for (const appointment of appointments) {
+                      const group = appointmentsByTechnician.get(
+                        appointment.technicianKey,
+                      );
+                      if (group) group.push(appointment);
+                      else appointmentsByTechnician.set(
+                        appointment.technicianKey,
+                        [appointment],
+                      );
+                    }
 
-                  return (
-                    <div className="calendar-grid-2col">
-                      {report.technicians
-                        ?.filter((technician) =>
-                          appointmentsByTechnician.has(technician),
-                        )
-                        .map((technician) => (
-                          <TechnicianColumn
-                            key={technician}
-                            name={cleanTechName(technician)}
-                            appointments={appointmentsByTechnician.get(technician)}
-                            hideNames={hideNames}
-                            showPrices={showPrices}
-                            likelihoodMap={likelihoodMap}
-                            snapshot={sectionSnapshots.calendar}
-                            reviewState={sectionStates.calendar}
-                            onUpdateSeen={(entry) =>
-                              acknowledgeEntry('calendar', entry)
-                            }
-                            onOpenDetails={openDetails}
-                          />
-                        ))}
-                    </div>
-                  );
-                }}
-              />
-            ) : (
-              <SectionEmptyState>
-                No appointments scheduled.
-              </SectionEmptyState>
-            )}
+                    return (
+                      <div className="calendar-grid-2col">
+                        {report.technicians
+                          ?.filter((technician) =>
+                            appointmentsByTechnician.has(technician),
+                          )
+                          .map((technician) => (
+                            <TechnicianColumn
+                              key={technician}
+                              name={cleanTechName(technician)}
+                              appointments={appointmentsByTechnician.get(technician)}
+                              hideNames={hideNames}
+                              showPrices={showPrices}
+                              likelihoodMap={likelihoodMap}
+                              snapshot={sectionSnapshots.calendar}
+                              reviewState={sectionStates.calendar}
+                              onUpdateSeen={(entry) =>
+                                acknowledgeEntry('calendar', entry)
+                              }
+                              onOpenDetails={openDetails}
+                            />
+                          ))}
+                      </div>
+                    );
+                  }}
+                />
+              ) : (
+                <SectionEmptyState>
+                  No appointments scheduled.
+                </SectionEmptyState>
+              )}
+            </div>
           </section>
 
           <section
+            id="report-section-notes"
             className="report-section notes-section"
             hidden={!sectionVisible('notes')}
           >
             <ReviewableSectionHeader
               title="Client & Appointment Notes"
+              count={navCounts.notes}
               icon={<StickyNote size={20} className="section-icon" />}
               state={sectionStates.notes}
               isToday={isToday}
@@ -911,11 +954,13 @@ function DashboardWorkspace({ user, onLogout }) {
           </section>
 
           <section
+            id="report-section-potential-fixes"
             className="report-section fixes-section"
             hidden={!sectionVisible('potential-fixes')}
           >
             <ReviewableSectionHeader
               title="Potential Fixes"
+              count={navCounts['potential-fixes']}
               icon={<Wrench size={20} className="section-icon" />}
               state={sectionStates['potential-fixes']}
               isToday={isToday}
@@ -963,11 +1008,13 @@ function DashboardWorkspace({ user, onLogout }) {
           </section>
 
           <section
+            id="report-section-duplicates"
             className="report-section duplicates-section"
             hidden={!sectionVisible('duplicates')}
           >
             <ReviewableSectionHeader
               title="Duplicate Clients Today"
+              count={navCounts.duplicates}
               icon={<AlertTriangle size={20} className="section-icon" />}
               state={sectionStates.duplicates}
               isToday={isToday}
@@ -1065,11 +1112,13 @@ function DashboardWorkspace({ user, onLogout }) {
           </section>
 
           <section
+            id="report-section-anyone-available"
             className="report-section anyone-section"
             hidden={!sectionVisible('anyone-available')}
           >
             <ReviewableSectionHeader
               title="Clients Booked for Anyone Available"
+              count={navCounts['anyone-available']}
               icon={<Users size={20} className="section-icon" />}
               state={sectionStates['anyone-available']}
               isToday={isToday}
@@ -1118,11 +1167,13 @@ function DashboardWorkspace({ user, onLogout }) {
           </section>
 
           <section
+            id="report-section-staff-first-hour"
             className="report-section info-section"
             hidden={!sectionVisible('staff-first-hour')}
           >
             <ReviewableSectionHeader
               title="Staff Without a First-Hour (9-10 AM) Appointment"
+              count={navCounts['staff-first-hour']}
               icon={<Sun size={20} className="section-icon" />}
               state={sectionStates['staff-first-hour']}
               isToday={isToday}

@@ -111,3 +111,43 @@ test('only synchronizes preference events for the same user', () => {
   );
   expect(result.current[0].theme).toBe('light');
 });
+
+test('opens existing users in Old without losing their New interface preferences', () => {
+  localStorage.setItem(dashboardPreferencesKey(user), JSON.stringify({
+    theme: 'dark', location: 'irvine', dateMode: 'tomorrow',
+    activeSection: 'notes', scheduleView: 'list', hideNames: true,
+  }));
+  const { result } = renderHook(() => useDashboardPreferences(user));
+  expect(result.current[0]).toMatchObject({
+    interfaceMode: 'old', theme: 'dark', location: 'irvine',
+    dateMode: 'tomorrow', activeSection: 'notes', scheduleView: 'list', hideNames: true,
+  });
+  expect(document.documentElement.dataset.theme).toBe('light');
+  act(() => result.current[1]({ interfaceMode: 'new' }));
+  expect(document.documentElement.dataset.theme).toBe('dark');
+  expect(result.current[0].activeSection).toBe('notes');
+});
+
+test.each(['old', 'new'])('an explicit %s PIN choice overrides the saved mode and survives reload', (mode) => {
+  localStorage.setItem(dashboardPreferencesKey(user), JSON.stringify({
+    interfaceMode: mode === 'old' ? 'new' : 'old', location: 'irvine', showPrices: false,
+  }));
+  const first = renderHook(() => useDashboardPreferences(user, mode));
+  expect(first.result.current[0]).toMatchObject({ interfaceMode: mode, location: 'irvine', showPrices: false });
+  first.unmount();
+  const second = renderHook(() => useDashboardPreferences({ ...user, username: 'Renamed' }));
+  expect(second.result.current[0].interfaceMode).toBe(mode);
+  const other = renderHook(() => useDashboardPreferences({ id: 'other', username: user.username }));
+  expect(other.result.current[0].interfaceMode).toBe('old');
+});
+
+test('a blocked storage write still allows switching and invalid modes fall back to Old', () => {
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+  const { result } = renderHook(() => useDashboardPreferences(user));
+  act(() => result.current[1]({ interfaceMode: 'new' }));
+  expect(result.current[0].interfaceMode).toBe('new');
+  expect(document.documentElement.dataset.theme).toBe('dark');
+  act(() => result.current[1]({ interfaceMode: 'unknown' }));
+  expect(result.current[0].interfaceMode).toBe('old');
+  expect(document.documentElement.dataset.theme).toBe('light');
+});

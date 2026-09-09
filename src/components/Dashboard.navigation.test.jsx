@@ -49,6 +49,10 @@ vi.mock('../hooks/useReports', () => ({
 beforeEach(() => {
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ top: 100, left: 50, bottom: 150, right: 250, width: 200, height: 50 });
   localStorage.clear();
+  // This suite exercises New's navigation and schedule tools.
+  for (const id of ['viewer', 'other-id']) {
+    localStorage.setItem(`reports_preferences_v1:id:${id}`, JSON.stringify({ interfaceMode: 'new' }));
+  }
   vi.clearAllMocks();
   fixture.loading = false;
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
@@ -537,5 +541,93 @@ test('opening updated sections and filtered views preserves unread rows until ea
   fireEvent.click(remaining);
   expect(screen.queryByRole('img', { name: 'Updates in Schedule' })).not.toBeInTheDocument();
   expect(fixture.api.acknowledgeSectionEntry).not.toHaveBeenCalled();
+  expect(fixture.api.submitSectionSignoff).not.toHaveBeenCalled();
+});
+
+test('Old defaults to a single report with counters and an optional full schedule', async () => {
+  localStorage.removeItem('reports_preferences_v1:id:viewer');
+  mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  expect(screen.getByRole('button', { name: 'Old interface' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.queryByRole('navigation', { name: 'Report sections' })).not.toBeInTheDocument();
+  expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(6);
+  expect(screen.getByText('0 of 6 sections reviewed')).toBeVisible();
+  expect(screen.getByRole('heading', { name: 'Client & Appointment Notes' }).parentElement).toHaveTextContent('1');
+  expect(screen.queryByRole('button', { name: 'View 9:00 AM appointment details' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Show schedule' }));
+  expect(screen.getByRole('button', { name: 'Hide schedule' })).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getAllByRole('button', { name: /^Copy shown schedule for/ })).toHaveLength(2);
+  expect(screen.queryByRole('textbox', { name: 'Search schedule' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'New interface' }));
+  fireEvent.click(screen.getByRole('button', { name: /Client notes\s*1/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Old interface' }));
+  expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(6);
+});
+
+test('switching preserves New filters, draft search, privacy, date, theme and expanded note history', async () => {
+  mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Hide Names' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Hide Prices' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Irvine', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Tomorrow', exact: true }));
+  fireEvent.change(screen.getByRole('combobox', { name: 'Filter by technician' }), { target: { value: 'Alice' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search schedule' }), { target: { value: 'Natural' } });
+  fireEvent.click(screen.getByRole('button', { name: /Past appointments/ }));
+  const history = screen.getByText('Past request');
+  expect(history).toBeVisible();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  const reviewsBeforeSwitch = fixture.api.getSectionReviews.mock.calls.length;
+
+  fireEvent.click(screen.getByRole('button', { name: 'Old interface' }));
+  expect(history).toBeVisible();
+  expect(document.documentElement.dataset.theme).toBe('light');
+  fireEvent.click(screen.getByRole('button', { name: 'Show schedule' }));
+  expect(screen.getAllByRole('button', { name: /^Copy shown schedule for/ })).toHaveLength(2);
+  const oldSchedule = document.getElementById('calendar-content');
+  expect(oldSchedule).not.toHaveTextContent('Avery Chen');
+  expect(oldSchedule).not.toHaveTextContent('$120');
+  expect(within(oldSchedule).getByText('Volume Set')).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Copy shown schedule for Chloe' }));
+  await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith('10:00 AM - Volume Set (3d)'));
+
+  fireEvent.click(screen.getByRole('button', { name: 'New interface' }));
+  expect(document.documentElement.dataset.theme).toBe('dark');
+  expect(history).toBeVisible();
+  expect(screen.getByRole('textbox', { name: 'Search schedule' })).toHaveValue('Natural');
+  expect(screen.getByRole('combobox', { name: 'Filter by technician' })).toHaveValue('Alice');
+  expect(screen.getByRole('button', { name: 'Irvine', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: 'Tomorrow', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: 'List', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  expect(fixture.api.getSectionReviews).toHaveBeenCalledTimes(reviewsBeforeSwitch);
+  expect(fixture.api.submitSectionSignoff).not.toHaveBeenCalled();
+});
+
+test('Old reveals a collapsed updated schedule without dismissing its highlight or signing it off', async () => {
+  fixture.api.getSectionReviews.mockResolvedValue({
+    reviews: [{ sectionKey: 'calendar', signedAtUtc: '2026-09-04T15:00:00Z', entries: [
+      { entryKey: 'entry-a', contentVersion: 'old' },
+      { entryKey: 'entry-b', contentVersion: 'new' },
+    ] }],
+    acknowledgements: [],
+  });
+  mount();
+  await screen.findByLabelText('New since your review');
+  fireEvent.click(screen.getByRole('button', { name: 'Old interface' }));
+  const cue = screen.getByLabelText('New since your review');
+  expect(cue).not.toBeVisible();
+  const row = cue.closest('.appointment-row');
+  row.scrollIntoView = vi.fn();
+  fireEvent.click(screen.getByRole('button', { name: 'Show next update in Calendar List View' }));
+  await waitFor(() => expect(row.scrollIntoView).toHaveBeenCalled());
+  expect(cue).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Hide schedule' })).toHaveAttribute('aria-expanded', 'true');
+  expect(fixture.api.acknowledgeSectionEntry).not.toHaveBeenCalled();
+  expect(fixture.api.submitSectionSignoff).not.toHaveBeenCalled();
+  fireEvent.click(row);
+  await waitFor(() => expect(fixture.api.acknowledgeSectionEntry).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByRole('button', { name: 'New interface' }));
+  expect(screen.queryByLabelText('New since your review')).not.toBeInTheDocument();
   expect(fixture.api.submitSectionSignoff).not.toHaveBeenCalled();
 });

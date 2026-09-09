@@ -22,6 +22,7 @@ const defaults = {
   sorting: [{ id: 'appointmentTime', desc: false }],
   technicians: {},
   theme: 'dark',
+  interfaceMode: 'old',
 };
 
 export function validateDashboardPreferences(value) {
@@ -68,6 +69,7 @@ export function validateDashboardPreferences(value) {
       }),
     ),
     theme: source.theme === 'light' ? 'light' : 'dark',
+    interfaceMode: source.interfaceMode === 'new' ? 'new' : defaults.interfaceMode,
   };
 }
 
@@ -107,11 +109,14 @@ function readPreferences(user, key) {
 }
 
 // The dashboard is keyed by identity so one user's state is never written to another key.
-export function useDashboardPreferences(user) {
+export function useDashboardPreferences(user, initialInterfaceMode) {
   const key = dashboardPreferencesKey(user);
-  const [preferences, setPreferences] = useState(() =>
-    readPreferences(user, key),
-  );
+  const [preferences, setPreferences] = useState(() => {
+    const saved = readPreferences(user, key);
+    return ['old', 'new'].includes(initialInterfaceMode)
+      ? { ...saved, interfaceMode: initialInterfaceMode }
+      : saved;
+  });
   const updatePreferences = useCallback((update) => {
     setPreferences((current) =>
       validateDashboardPreferences({
@@ -147,17 +152,20 @@ export function useDashboardPreferences(user) {
     return () => window.removeEventListener('storage', sync);
   }, [key]);
 
+  // Old retains the original light presentation; New keeps its saved theme.
+  const displayTheme =
+    preferences.interfaceMode === 'old' ? 'light' : preferences.theme;
   useLayoutEffect(() => {
     document.documentElement.classList.toggle(
       'dark',
-      preferences.theme === 'dark',
+      displayTheme === 'dark',
     );
-    document.documentElement.dataset.theme = preferences.theme;
+    document.documentElement.dataset.theme = displayTheme;
     document
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute(
         'content',
-        preferences.theme === 'light' ? '#f6f6f8' : '#09090b',
+        displayTheme === 'light' ? '#f6f6f8' : '#09090b',
       );
     return () => {
       document.documentElement.classList.add('dark');
@@ -166,7 +174,7 @@ export function useDashboardPreferences(user) {
         .querySelector('meta[name="theme-color"]')
         ?.setAttribute('content', '#09090b');
     };
-  }, [preferences.theme]);
+  }, [displayTheme]);
 
   return [preferences, updatePreferences];
 }

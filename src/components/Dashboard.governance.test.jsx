@@ -111,11 +111,12 @@ const auditData = {
   views: [],
 };
 
-function renderDashboard(username = 'Ross') {
+function renderDashboard(username = 'Ross', initialInterfaceMode) {
   return render(
     <Dashboard
       user={{ id: `${username.toLowerCase()}-id`, username }}
       onLogout={vi.fn()}
+      initialInterfaceMode={initialInterfaceMode}
     />
   );
 }
@@ -169,8 +170,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-test('shows all five locations and a review control for every section', async () => {
-  renderDashboard();
+test.each(['old', 'new'])('shows all five locations and six review controls in %s', async (mode) => {
+  renderDashboard('Ross', mode);
 
   for (const location of mockLocations) {
     expect(screen.getByRole('button', { name: location.name })).toBeInTheDocument();
@@ -182,8 +183,8 @@ test('shows all five locations and a review control for every section', async ()
   expect(screen.getByText('No duplicate clients found.')).toBeInTheDocument();
 });
 
-test('signs off one section without changing the others', async () => {
-  renderDashboard();
+test.each(['old', 'new'])('signs off one section without changing the others in %s', async (mode) => {
+  renderDashboard('Ross', mode);
 
   const calendarButton = await screen.findByRole('button', { name: 'Sign off Calendar List View' });
   fireEvent.click(calendarButton);
@@ -200,8 +201,8 @@ test('signs off one section without changing the others', async () => {
   expect(screen.getByRole('button', { name: 'Sign off Client & Appointment Notes' })).toBeInTheDocument();
 });
 
-test('tomorrow remains read-only for every section', async () => {
-  renderDashboard();
+test.each(['old', 'new'])('tomorrow remains read-only for every section in %s', async (mode) => {
+  renderDashboard('Ross', mode);
 
   fireEvent.click(screen.getByRole('button', { name: 'Tomorrow' }));
   const calendarButton = await screen.findByRole('button', { name: 'Sign off Calendar List View' });
@@ -254,6 +255,7 @@ test('shows a changed appointment only after a baseline and persists its dismiss
   });
 
   renderDashboard();
+  fireEvent.click(screen.getByRole('button', { name: 'Show schedule' }));
   const cue = await screen.findByLabelText('New since your review');
   fireEvent.click(cue.closest('.appointment-row'));
 

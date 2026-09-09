@@ -313,11 +313,13 @@ api.getAudit = async (date) => ({
 
 function Preview() {
   const [loggedIn, setLoggedIn] = useState(!['login', 'login-error', 'login-slow'].includes(scenario));
+  const [initialInterfaceMode, setInitialInterfaceMode] = useState(null);
   const [updateQueued, setUpdateQueued] = useState(false);
   return (
     <>
       {scenario === 'startup' ? <WorkspaceLoading /> : loggedIn ? (
         <Dashboard
+          initialInterfaceMode={initialInterfaceMode}
           user={{
             id:
               scenario === 'audit'
@@ -330,7 +332,8 @@ function Preview() {
           onLogout={() => setLoggedIn(false)}
         />
       ) : (
-        <Login onLogin={async () => {
+        <Login onLogin={async (_pin, interfaceMode) => {
+          setInitialInterfaceMode(interfaceMode);
           await new Promise(resolve => setTimeout(resolve, scenario === 'login-slow' ? 10000 : 1200));
           if (scenario === 'login-error') throw new Error('That PIN wasn’t recognized. Please try again.');
           setLoggedIn(true);

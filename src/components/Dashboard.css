@@ -283,6 +283,10 @@
   align-items: center;
   gap: 12px;
 }
+.header-right {
+  flex-wrap: wrap;
+  min-width: 0;
+}
 .header-breadcrumb {
   font-size: 1rem;
   color: var(--muted-foreground);
@@ -506,6 +510,21 @@
 .section-title svg {
   flex-shrink: 0;
   color: var(--muted-foreground);
+}
+.section-item-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 2px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 .section-heading p {
   margin: 5px 0 0;

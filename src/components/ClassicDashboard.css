@@ -1,0 +1,306 @@
+/* Old presentation from 4c9c625, scoped to the shared, current report components. */
+.classic-interface {
+  --primary: #1e40af;
+  --selection-background: #eaf2ff;
+  --selection-border: #7c9dce;
+  --selection-foreground: #1e3a5f;
+  background: #f8fafc;
+}
+.classic-interface .workspace-main {
+  margin-left: 0;
+}
+.classic-interface .report-header {
+  background: linear-gradient(135deg, #1e3a5f, #2d5a87);
+  color: #fff;
+  padding: 14px 24px;
+  border: 0;
+  gap: 14px 24px;
+}
+.classic-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 16px;
+}
+.classic-heading h1 {
+  width: 100%;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 650;
+}
+.classic-heading > span,
+.classic-heading .pacific-clock {
+  font-size: 0.875rem;
+  color: #e2e8f0;
+}
+.classic-heading .pacific-clock time {
+  color: #fff;
+}
+.classic-heading .pacific-clock-dot {
+  background: #9dd4b5;
+}
+.classic-interface .header-right {
+  gap: 8px 12px;
+}
+.classic-interface .header-sync {
+  color: #e2e8f0;
+}
+.classic-interface .header-right > [data-slot='button'] {
+  color: #fff;
+  background: #ffffff12;
+  border: 1px solid #ffffff70;
+}
+.classic-interface .header-right > [data-slot='button']:hover {
+  background: #ffffff24;
+}
+.classic-interface .header-right .interface-switcher {
+  color: #fff;
+}
+.classic-user {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.classic-interface .workspace-heading {
+  padding: 12px 24px;
+  gap: 10px 20px;
+}
+.classic-review-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.classic-review-summary a {
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.classic-interface .location-tabs {
+  margin: 0;
+  padding: 10px 24px;
+  background: #e2e8f0;
+}
+.classic-interface .location-tab {
+  flex: 1;
+  font-size: 0.9375rem;
+}
+.classic-interface .location-tab.active {
+  background: #fff;
+  color: #1e293b;
+  border: 2px solid #2d5a87;
+  box-shadow: inset 0 -4px 0 var(--tab-color, #2d5a87);
+  font-weight: 650;
+}
+.classic-interface .report-content {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 20px 24px;
+}
+.classic-interface .report-section {
+  border-color: #dce3ec;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px #1e3a5f0a;
+  scroll-margin-top: 16px;
+}
+.classic-interface .section-header {
+  padding: 12px 16px;
+  gap: 10px;
+  background: #f1f5f9;
+  border-radius: 8px 8px 0 0;
+}
+.classic-interface .section-title {
+  font-size: 1rem;
+  font-weight: 650;
+  color: #1e293b;
+}
+.classic-interface .section-empty-state {
+  padding: 18px 16px;
+  font-size: 0.875rem;
+}
+.classic-interface .calendar-grid-2col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 14px;
+  gap: 14px;
+}
+.classic-interface .tech-column-header {
+  padding: 9px 12px;
+  background: linear-gradient(135deg, #1e3a5f, #2d5a87);
+  color: #fff;
+}
+.classic-interface .tech-count {
+  padding: 2px 9px;
+  border-radius: 12px;
+  background: #ffffff24;
+  color: #fff;
+}
+.classic-interface .tech-column-header .copy-btn {
+  color: #fff;
+}
+.classic-interface .tech-column-header .copy-btn:hover {
+  background: #ffffff24;
+}
+.classic-interface .tech-column-header .copy-btn.copied {
+  background: #166534;
+}
+.classic-interface .tech-column-header .copy-btn.failed {
+  background: #991b1b;
+}
+.classic-interface .tech-appointments .appointment-row {
+  grid-template-columns: 5rem minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  grid-template-areas: 'time customer service badges actions';
+  padding: 8px 10px;
+  gap: 8px;
+  font-size: 0.875rem;
+  background-color: #fff;
+}
+.classic-interface .tech-appointments .appointment-row.hide-names {
+  grid-template-columns: 5rem minmax(0, 1fr) auto auto;
+  grid-template-areas: 'time service badges actions';
+}
+.classic-interface .apt-time {
+  color: #1e40af;
+  font-weight: 650;
+}
+.classic-interface .apt-customer {
+  font-weight: 600;
+}
+.classic-interface .apt-service {
+  font-size: 0.8125rem;
+}
+.classic-interface .apt-days,
+.classic-interface .apt-price,
+.classic-interface .days-badge {
+  font-size: 0.75rem;
+}
+.classic-interface .card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  padding: 14px;
+  gap: 12px;
+}
+.classic-interface .notes-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+}
+.classic-interface .report-card {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  padding: 14px;
+}
+.classic-interface .report-card-header {
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #33415526;
+}
+.classic-interface .report-card-time {
+  color: #1e40af;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.classic-interface .report-card-tech {
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #3341550f;
+  color: #475569;
+  font-size: 0.8125rem;
+}
+.classic-interface .report-card-customer {
+  font-size: 0.9375rem;
+  font-weight: 650;
+}
+.classic-interface .report-card-service {
+  font-size: 0.8125rem;
+  color: #475569;
+}
+.classic-interface .report-card-extra {
+  margin-top: 10px;
+  padding-top: 10px;
+  font-size: 0.875rem;
+}
+.classic-interface .report-card.fixes {
+  background-color: #ffe8db;
+  border-color: #ffb399;
+}
+.classic-interface .report-card.duplicates {
+  background-color: #fef3c7;
+  border-color: #e6b943;
+}
+.classic-interface .report-card.duplicates.cross-location {
+  background-color: #fef2f2;
+  border-color: #e8a0a0;
+}
+.classic-interface .report-card.anyone {
+  background-color: #e6f4ec;
+  border-color: #9cc7ae;
+}
+.classic-interface .report-card.note {
+  background-color: #eff6ff;
+  border-color: #aec9eb;
+}
+.classic-interface .review-update-cue {
+  box-shadow: inset 4px 0 0 #2563eb;
+  background-image: linear-gradient(#60a5fa25, #60a5fa25);
+}
+@container (max-width: 620px) {
+  .classic-interface .tech-appointments .appointment-row {
+    grid-template-columns: 5rem minmax(0, 1fr) auto;
+    grid-template-areas: 'time customer actions' 'service service badges';
+  }
+  .classic-interface .tech-appointments .appointment-row.hide-names {
+    grid-template-columns: 5rem minmax(0, 1fr) auto;
+    grid-template-areas: 'time service actions' 'badges badges badges';
+  }
+}
+@container (max-width: 360px) {
+  .classic-interface .tech-appointments .appointment-row,
+  .classic-interface .tech-appointments .appointment-row.hide-names {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'time actions' 'customer customer' 'service service' 'badges badges';
+  }
+  .classic-interface .tech-appointments .appointment-row.hide-names {
+    grid-template-areas: 'time actions' 'service service' 'badges badges';
+  }
+}
+@media (max-width: 1200px) {
+  .classic-interface .calendar-grid-2col {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 639px) {
+  .classic-interface .report-header,
+  .classic-interface .workspace-heading,
+  .classic-interface .location-tabs {
+    padding: 12px;
+  }
+  .classic-interface .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .classic-interface .header-right .interface-switcher {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .classic-interface .report-content {
+    padding: 14px 10px;
+  }
+  .classic-interface .card-grid,
+  .classic-interface .notes-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+  }
+  .classic-interface .calendar-grid-2col {
+    padding: 10px;
+  }
+  .classic-interface .section-header {
+    padding: 12px;
+  }
+  .classic-interface .section-title {
+    flex-wrap: wrap;
+  }
+}
+@media (pointer: coarse) {
+  .classic-interface .section-actions > [data-slot='button'] {
+    min-height: 44px;
+  }
+}

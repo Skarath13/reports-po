@@ -27,6 +27,21 @@ build variable is preserved. Only that variable is exposed to the browser.
 
 ## Dashboard UI
 
+The PIN screen and signed-in header offer **Old / New** interface buttons. Old
+is the default for accounts without a saved interface choice. It restores the
+blue-and-white, single-page report layout from `4c9c625`; the calendar starts
+collapsed behind **Show schedule** so notes and exceptions are easy to reach.
+Both interfaces share the current report fetching, sign-offs, counters, change
+highlights, copy actions, appointment details, and note history.
+
+The interface is saved with the existing user-scoped browser preferences. An
+explicit PIN-screen choice overrides that user's saved interface for this sign-in
+and future visits; leaving it unselected restores their saved choice. Each login
+starts with no explicit override, including after logout or session expiry.
+Switching preserves New's filters, draft search, layout, section, and theme; Old
+shows the complete technician groups in the original light presentation. The
+choice is local to this browser and does not change authentication or permissions.
+
 The neutral black theme lives in `src/index.css`. The shared shell, schedule,
 appointment detail sheet, and notes use the existing report and review hooks.
 Search and technician filters stay in memory, reset on location/date/privacy

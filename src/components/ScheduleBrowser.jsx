@@ -24,6 +24,7 @@ import {
 } from './ui/table';
 
 export default function ScheduleBrowser({
+  classic = false,
   appointments,
   hideNames,
   view,
@@ -90,6 +91,10 @@ export default function ScheduleBrowser({
     getSortedRowModel: getSortedRowModel(),
     enableSortingRemoval: false,
   });
+
+  // Keep New's draft search and saved filters mounted, but show the complete
+  // original technician columns in Old. Neither view changes the signed snapshot.
+  if (classic) return <div className="classic-schedule">{renderGroups(appointments)}</div>;
 
   return (
     <div className="schedule-browser">

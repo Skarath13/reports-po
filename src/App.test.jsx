@@ -12,7 +12,13 @@ vi.mock('./api/client', () => ({
   },
 }));
 vi.mock('./components/Dashboard', () => ({
-  default: ({ user }) => <h1>Dashboard for {user.username}</h1>,
+  default: ({ user, initialInterfaceMode, onLogout }) => (
+    <>
+      <h1>Dashboard for {user.username}</h1>
+      <span data-testid="login-interface">{initialInterfaceMode || 'saved'}</span>
+      <button onClick={onLogout}>Logout</button>
+    </>
+  ),
 }));
 
 beforeEach(() => vi.resetAllMocks());
@@ -68,6 +74,8 @@ test('keeps the keypad mounted during one pending submission and allows retry af
     'true',
   );
   expect(screen.getByRole('button', { name: '1', exact: true })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Old interface' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'New interface' })).toBeDisabled();
   await act(async () => rejectLogin(new Error('Invalid PIN')));
   expect(screen.getByRole('alert')).toHaveTextContent('Invalid PIN');
   expect(
@@ -80,6 +88,23 @@ test('keeps the keypad mounted during one pending submission and allows retry af
     screen.getByRole('heading', { name: 'Dashboard for Test viewer' }),
   ).toBeInTheDocument();
   expect(api.login).toHaveBeenCalledTimes(2);
+});
+
+test.each(['old', 'new'])('passes the explicit %s PIN choice through a failed login and resets it for the next user', async (mode) => {
+  api.login.mockRejectedValueOnce(new Error('Invalid PIN'));
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: `${mode === 'old' ? 'Old' : 'New'} interface` }));
+  await act(async () => enterPin('0000'));
+  expect(screen.getByRole('alert')).toHaveTextContent('Invalid PIN');
+  expect(screen.getByRole('button', { name: `${mode === 'old' ? 'Old' : 'New'} interface` })).toHaveAttribute('aria-pressed', 'true');
+  api.login.mockResolvedValueOnce({ user: { id: 'ross', username: 'Ross' } });
+  await act(async () => enterPin('0000'));
+  expect(screen.getByTestId('login-interface')).toHaveTextContent(mode);
+  fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
+  api.login.mockResolvedValueOnce({ user: { id: 'tonet', username: 'Tonet' } });
+  await act(async () => enterPin('0000'));
+  expect(screen.getByTestId('login-interface')).toHaveTextContent('saved');
+  expect(api.login.mock.calls).toEqual([['0000'], ['0000'], ['0000']]);
 });
 
 test('shows the branded skeleton while restoring a session without displaying report data', async () => {

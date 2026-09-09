@@ -1,0 +1,54 @@
+.interface-switcher {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--foreground);
+}
+.interface-switcher-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.interface-switcher-options {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+}
+.interface-switcher-options button {
+  min-width: 58px;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.interface-switcher-options button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.interface-switcher-options button[aria-pressed='true'] {
+  background: var(--selection-background);
+  border-color: var(--selection-border);
+  color: var(--selection-foreground);
+}
+.login-interface-choice {
+  margin-top: 20px;
+}
+.login-interface-choice .interface-switcher {
+  justify-content: center;
+}
+.login-interface-choice p {
+  margin: 8px 0 0;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+@media (pointer: coarse) {
+  .interface-switcher-options button {
+    min-height: 44px;
+  }
+}

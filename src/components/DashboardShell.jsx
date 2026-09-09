@@ -22,6 +22,7 @@ import {
 import { Button } from './ui/button';
 import BrandLogo from './BrandLogo';
 import PacificClock from './PacificClock';
+import InterfaceSwitcher from './InterfaceSwitcher';
 import {
   Sheet,
   SheetContent,
@@ -56,6 +57,8 @@ export default function DashboardShell({
   onSectionChange,
   theme,
   onThemeChange,
+  interfaceMode,
+  onInterfaceChange,
   unreadSections = [],
   counts,
   sectionStates,
@@ -65,6 +68,7 @@ export default function DashboardShell({
   onAudit,
   children,
 }) {
+  const isOld = interfaceMode === 'old';
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const headingRef = useRef(null);
@@ -214,12 +218,17 @@ export default function DashboardShell({
   );
 
   return (
-    <div className="report-dashboard">
+    <div
+      className={`report-dashboard ${isOld ? 'classic-interface' : ''}`}
+      data-interface={interfaceMode}
+    >
       <a className="skip-link" href="#report-main">
         Skip to report
       </a>
-      <aside className="workspace-sidebar">{sidebar}</aside>
-      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+      <aside className="workspace-sidebar" hidden={isOld}>
+        {sidebar}
+      </aside>
+      <Sheet open={!isOld && menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent
           side="left"
           className="mobile-sidebar"
@@ -241,7 +250,14 @@ export default function DashboardShell({
       </Sheet>
       <div className="workspace-main">
         <header className="report-header">
-          <div className="header-breadcrumb">
+          {isOld && (
+            <div className="classic-heading">
+              <h1>{location?.name || 'Daily'} Reports</h1>
+              <span>{dateLabel}</span>
+              <PacificClock />
+            </div>
+          )}
+          <div className="header-breadcrumb" hidden={isOld}>
             <Button
               ref={menuRef}
               variant="ghost"
@@ -272,6 +288,10 @@ export default function DashboardShell({
             <strong>{location?.name}</strong>
           </div>
           <div className="header-right">
+            <InterfaceSwitcher
+              value={interfaceMode}
+              onChange={onInterfaceChange}
+            />
             <span className="header-sync">
               {syncLabel ? `Synced ${syncLabel} PT` : 'Awaiting report'}
             </span>
@@ -289,10 +309,18 @@ export default function DashboardShell({
                 Audit
               </Button>
             )}
+            {isOld && (
+              <>
+                <span className="classic-user">{user?.username}</span>
+                <Button variant="outline" onClick={onLogout}>
+                  <LogOut size={15} /> Logout
+                </Button>
+              </>
+            )}
           </div>
         </header>
         <div className="workspace-heading">
-          <div>
+          <div hidden={isOld}>
             <span className="eyebrow">Daily operations</span>
             <h1 ref={headingRef} tabIndex={-1}>
               {activeSection === 'overview'
@@ -302,9 +330,27 @@ export default function DashboardShell({
             </h1>
             <p className="workspace-date-line">
               <span>{dateLabel}</span>
-              <PacificClock />
+              {!isOld && <PacificClock />}
             </p>
           </div>
+          {isOld && (
+            <div className="classic-review-summary" role="status">
+              <ClipboardCheck size={17} />
+              <span>
+                {reviewStatus === 'ready'
+                  ? `${reviewCount} of 6 sections reviewed`
+                  : reviewStatus === 'error'
+                    ? 'Review status unavailable'
+                    : 'Preparing review status…'}
+              </span>
+              {unreadSections.length > 0 && (
+                <a href={`#report-section-${unreadSections[0]}`}>
+                  {unreadSections.length}{' '}
+                  {unreadSections.length === 1 ? 'section has' : 'sections have'} updates
+                </a>
+              )}
+            </div>
+          )}
           <div className="date-toggle" aria-label="Report date">
             <button
               className={isToday ? 'active' : ''}
@@ -327,6 +373,7 @@ export default function DashboardShell({
             <button
               key={item.id}
               className={`location-tab ${location?.id === item.id ? 'active' : ''}`}
+              style={isOld ? { '--tab-color': item.color } : undefined}
               aria-pressed={location?.id === item.id}
               onClick={() => onLocationChange(item.id)}
             >

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, CircleAlert, LockKeyhole, Keyboard } from 'lucide-react';
 import BrandLogo from './BrandLogo';
+import InterfaceSwitcher from './InterfaceSwitcher';
 import { LoadingStatus } from './LoadingState';
 import './Login.css';
 
@@ -8,6 +9,8 @@ function Login({ onLogin, error: authError }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(authError || null);
   const [loading, setLoading] = useState(false);
+  // No explicit choice means restore this user's saved interface after authentication.
+  const [interfaceMode, setInterfaceMode] = useState(null);
   const pinRef = useRef('');
   const submittingRef = useRef(false);
   const containerRef = useRef(null);
@@ -23,7 +26,7 @@ function Login({ onLogin, error: authError }) {
       setLoading(true);
       setError(null);
       try {
-        await onLogin(candidate);
+        await onLogin(candidate, interfaceMode);
       } catch (err) {
         setError(err.message || 'Unable to sign in. Please try again.');
         containerRef.current?.focus({ preventScroll: true });
@@ -34,7 +37,7 @@ function Login({ onLogin, error: authError }) {
         setLoading(false);
       }
     },
-    [onLogin],
+    [interfaceMode, onLogin],
   );
 
   const handleDigit = useCallback(
@@ -97,6 +100,18 @@ function Login({ onLogin, error: authError }) {
             <h1>Welcome to Reports</h1>
             <p>Enter your 4-digit PIN to get started.</p>
           </div>
+        </div>
+        <div className="login-interface-choice">
+          <InterfaceSwitcher
+            value={interfaceMode}
+            onChange={setInterfaceMode}
+            disabled={loading}
+          />
+          <p>
+            {interfaceMode
+              ? `${interfaceMode === 'old' ? 'Old' : 'New'} interface will open after sign-in.`
+              : 'Choose an interface, or use your saved choice. Default: Old.'}
+          </p>
         </div>
         <div className="login-entry">
           <div

@@ -3,6 +3,7 @@ import SectionReviewControl from './SectionReviewControl';
 
 function ReviewableSectionHeader({
   title,
+  count,
   description,
   icon,
   state,
@@ -11,30 +12,42 @@ function ReviewableSectionHeader({
   statusError,
   onSignOff,
   onRemovedSeen,
+  onRevealContent,
   formatDateTime,
   children,
 }) {
   const [filteredUpdate, setFilteredUpdate] = useState(false);
   const showNextUpdate = (event) => {
     const section = event.currentTarget.closest('.report-section');
-    const next = [
-      ...section.querySelectorAll('[data-review-updated="true"]'),
-    ].find((item) => item.getBoundingClientRect().height > 0);
-    setFilteredUpdate(!next);
-    next?.scrollIntoView({
-      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-        ? 'instant'
-        : 'smooth',
-      block: 'center',
-    });
+    const reveal = () => {
+      if (!section.isConnected) return;
+      const next = [
+        ...section.querySelectorAll('[data-review-updated="true"]'),
+      ].find((item) => item.getBoundingClientRect().height > 0);
+      setFilteredUpdate(!next);
+      next?.scrollIntoView({
+        behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+          ? 'instant'
+          : 'smooth',
+        block: 'center',
+      });
+    };
+    if (onRevealContent) {
+      onRevealContent();
+      // Wait for the collapsed schedule to open before finding a visible row.
+      requestAnimationFrame(reveal);
+    } else {
+      reveal();
+    }
   };
 
   return (
     <div className="section-header section-review-header">
       <div className="section-heading">
-        <h2 className="section-title">
+        <h2 className="section-title" aria-label={title}>
           {icon}
           {title}
+          {count != null && <span className="section-item-count" aria-label={`${count} items`}>{count}</span>}
         </h2>
         {description && <p>{description}</p>}
       </div>
