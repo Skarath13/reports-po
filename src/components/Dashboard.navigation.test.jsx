@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -373,6 +374,110 @@ test('copies only the shown technician appointments and reports clipboard failur
       name: 'Copy failed for Chloe schedule',
     }),
   ).toBeVisible();
+});
+
+test('copies the complete list in its displayed order without opening details or signing off', async () => {
+  mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
+
+  fireEvent.click(screen.getByRole('button', { name: 'Copy schedule', exact: true }));
+  await screen.findByRole('button', { name: 'Schedule copied' });
+  expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
+    '9:00 AM - Avery Chen - Natural Fill (14d)\n10:00 AM - Zoe Green - Volume Set (3d) ~ $120',
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Time', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Copy schedule', exact: true }));
+  await screen.findByRole('button', { name: 'Schedule copied' });
+  expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
+    '10:00 AM - Zoe Green - Volume Set (3d) ~ $120\n9:00 AM - Avery Chen - Natural Fill (14d)',
+  );
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(fixture.api.submitSectionSignoff).not.toHaveBeenCalled();
+  expect(fixture.api.acknowledgeSectionEntry).not.toHaveBeenCalled();
+});
+
+test('list schedule copy honors technician, search and privacy filters and disables empty copies', async () => {
+  const secondChloeAppointment = {
+    ...fixture.report.byTechnician.Chloe[0],
+    id: 'c',
+    appointmentTime: '2026-09-04T18:00:00Z',
+    customerName: 'Another Client',
+    serviceName: 'Natural Fill',
+  };
+  fixture.report.byTechnician.Chloe.push(secondChloeAppointment);
+  fixture.report.totalAppointments += 1;
+  mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
+  fireEvent.change(screen.getByRole('combobox', { name: 'Filter by technician' }), {
+    target: { value: 'Chloe' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Hide Names' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Hide Prices' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Copy schedule', exact: true }));
+  await screen.findByRole('button', { name: 'Schedule copied' });
+  expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
+    '10:00 AM - Volume Set (3d)\n11:00 AM - Natural Fill (3d)',
+  );
+
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search schedule' }), {
+    target: { value: 'Natural' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Copy schedule', exact: true }));
+  await screen.findByRole('button', { name: 'Schedule copied' });
+  expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith('11:00 AM - Natural Fill (3d)');
+
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search schedule' }), {
+    target: { value: 'no matches' },
+  });
+  const copy = screen.getByRole('button', { name: 'Copy schedule', exact: true });
+  expect(copy).toBeDisabled();
+  fireEvent.click(copy);
+  expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(2);
+});
+
+test.each(['blocked', 'unavailable'])('list schedule copy allows retry when clipboard is %s', async (failure) => {
+  const writeText = navigator.clipboard.writeText;
+  if (failure === 'blocked') writeText.mockRejectedValueOnce(new Error('denied'));
+  else Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+  mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Copy schedule', exact: true }));
+  const retry = await screen.findByRole('button', { name: 'Copy failed. Try again.' });
+  expect(retry).toBeEnabled();
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+  fireEvent.click(retry);
+  expect(await screen.findByRole('button', { name: 'Schedule copied' })).toBeVisible();
+  expect(writeText).toHaveBeenLastCalledWith(
+    '9:00 AM - Avery Chen - Natural Fill (14d)\n10:00 AM - Zoe Green - Volume Set (3d) ~ $120',
+  );
+});
+
+test('a pending copy cannot be repeated or report success for changed schedule content', async () => {
+  let finishCopy;
+  navigator.clipboard.writeText.mockImplementationOnce(() => new Promise((resolve) => {
+    finishCopy = resolve;
+  }));
+  mount();
+  await screen.findByRole('button', { name: 'Sign off Calendar List View' });
+  fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Copy schedule', exact: true }));
+  const pendingCopy = screen.getByRole('button', { name: 'Copying schedule…' });
+  expect(pendingCopy).toBeDisabled();
+  fireEvent.click(pendingCopy);
+  expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Hide Prices' }));
+  await act(async () => finishCopy());
+  expect(screen.queryByRole('button', { name: 'Schedule copied' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Copy schedule', exact: true }));
+  await screen.findByRole('button', { name: 'Schedule copied' });
+  expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
+    '9:00 AM - Avery Chen - Natural Fill (14d)\n10:00 AM - Zoe Green - Volume Set (3d)',
+  );
 });
 
 test('restores layout, sorting, filters, visibility, section, date and theme only for the same user', async () => {

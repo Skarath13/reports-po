@@ -51,6 +51,11 @@ changes, and do not alter report totals or the section snapshot being signed off
 The name preference applies to the schedule and its detail panel; the dedicated
 notes and exception sections retain their existing client-name display.
 
+In New's List layout, **Copy schedule** copies every appointment matching the
+current search and technician filter, in the displayed sort order. It honors
+Hide Names and Hide Prices. Technician headers retain their copy buttons in
+both interfaces; row copy buttons continue to copy one appointment.
+
 Selected shadcn Radix components live in `src/components/ui`; their pinned source
 and MIT notice are in `licenses/`. TanStack Table v8 handles local sorting.
 

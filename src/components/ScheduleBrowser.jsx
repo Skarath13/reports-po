@@ -35,6 +35,7 @@ export default function ScheduleBrowser({
   onTechnicianChange,
   renderRow,
   renderGroups,
+  renderCopyAction,
 }) {
   const [query, setQuery] = useState('');
   const technicians = useMemo(
@@ -129,6 +130,7 @@ export default function ScheduleBrowser({
             </option>
           ))}
         </select>
+        {view === 'list' && renderCopyAction(table.getRowModel().rows.map((row) => row.original))}
         <div className="schedule-view-toggle" aria-label="Schedule layout">
           <Button
             variant={view === 'grouped' ? 'secondary' : 'ghost'}

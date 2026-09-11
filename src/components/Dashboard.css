@@ -657,6 +657,9 @@
   border: 1px solid var(--border-strong);
   border-radius: 7px;
 }
+.schedule-copy-btn[data-slot='button'] {
+  height: 42px;
+}
 .schedule-view-toggle [data-slot='button'] {
   height: 36px;
   font-size: 0.875rem;
@@ -799,11 +802,13 @@
   color: var(--foreground);
 }
 .row-copy-btn.copied,
-.copy-btn.copied {
+.copy-btn.copied,
+.schedule-copy-btn.copied {
   color: var(--positive);
 }
 .row-copy-btn.failed,
-.copy-btn.failed {
+.copy-btn.failed,
+.schedule-copy-btn.failed {
   color: var(--destructive);
 }
 .schedule-table .appointment-row .apt-row-actions {
@@ -1769,6 +1774,7 @@
   .section-signoff-btn[data-slot='button'],
   .section-actions .privacy-btn,
   .schedule-view-toggle [data-slot='button'],
+  .schedule-copy-btn[data-slot='button'],
   .row-copy-btn,
   .row-detail-btn,
   .copy-btn,

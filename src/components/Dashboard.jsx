@@ -823,6 +823,13 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                       },
                     }))
                   }
+                  renderCopyAction={(appointments) => (
+                    <ScheduleCopyButton
+                      appointments={appointments}
+                      hideNames={hideNames}
+                      showPrices={showPrices}
+                    />
+                  )}
                   renderRow={(appointment) => {
                     const entry = getAppointmentSnapshotEntry(
                       sectionSnapshots.calendar,
@@ -1368,6 +1375,75 @@ function formatAppointmentClipboardLine(appointment, hideNames, showPrices) {
   return appendPriceToScheduleLine(baseLine, appointment, showPrices);
 }
 
+function ScheduleCopyButton({
+  name,
+  appointments,
+  hideNames,
+  showPrices,
+}) {
+  const text = appointments
+    .map((appointment) =>
+      formatAppointmentClipboardLine(appointment, hideNames, showPrices),
+    )
+    .join('\n');
+  const [result, setResult] = useState(null);
+  const copyResetRef = useRef(null);
+  const copyRequestRef = useRef(0);
+  useEffect(() => () => {
+    clearTimeout(copyResetRef.current);
+    copyRequestRef.current += 1;
+  }, []);
+  // A completed copy applies only to the content that was actually copied.
+  const copyStatus = result?.text === text ? result.status : 'idle';
+  const copying = result?.status === 'copying';
+
+  const copyToClipboard = async () => {
+    if (!appointments.length || copying) return;
+    const request = ++copyRequestRef.current;
+    clearTimeout(copyResetRef.current);
+    setResult({ text, status: 'copying' });
+    let status;
+    try {
+      if (!navigator.clipboard?.writeText)
+        throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(text);
+      status = 'copied';
+    } catch (_error) {
+      status = 'failed';
+    }
+    if (request !== copyRequestRef.current) return;
+    setResult({ text, status });
+    copyResetRef.current = setTimeout(() => setResult(null), 2000);
+  };
+
+  const label = copyStatus === 'copied'
+    ? name ? `Copied ${name} schedule` : 'Schedule copied'
+    : copyStatus === 'failed'
+      ? name ? `Copy failed for ${name} schedule` : 'Copy failed. Try again.'
+      : copying
+        ? 'Copying schedule…'
+        : name ? `Copy shown schedule for ${name}` : 'Copy schedule';
+  const props = {
+    type: 'button',
+    onClick: copyToClipboard,
+    disabled: !appointments.length || copying,
+    title: name
+      ? 'Copy the appointments shown for this technician'
+      : 'Copy all appointments shown, using the current filters and sort order',
+    'aria-label': label,
+  };
+  const icon = copyStatus === 'copied' ? <Check size={14} /> : <Copy size={14} />;
+
+  return name ? (
+    <button {...props} className={`copy-btn ${copyStatus}`}>{icon}</button>
+  ) : (
+    <Button {...props} variant="outline" size="sm" className={`schedule-copy-btn ${copyStatus}`}>
+      {icon}
+      {label}
+    </Button>
+  );
+}
+
 function TechnicianColumn({
   name,
   appointments,
@@ -1379,51 +1455,17 @@ function TechnicianColumn({
   onUpdateSeen,
   onOpenDetails,
 }) {
-  const [copyStatus, setCopyStatus] = useState('idle');
-  const copyResetRef = useRef(null);
-  useEffect(() => () => clearTimeout(copyResetRef.current), []);
-
-  const copyToClipboard = async () => {
-    const lines = appointments
-      .map((appointment) =>
-        formatAppointmentClipboardLine(appointment, hideNames, showPrices),
-      )
-      .join('\n');
-    clearTimeout(copyResetRef.current);
-    try {
-      if (!navigator.clipboard?.writeText)
-        throw new Error('Clipboard unavailable');
-      await navigator.clipboard.writeText(lines);
-      setCopyStatus('copied');
-    } catch (_error) {
-      setCopyStatus('failed');
-    }
-    copyResetRef.current = setTimeout(() => setCopyStatus('idle'), 2000);
-  };
-
   return (
     <div className="tech-column">
       <div className="tech-column-header">
         <span className="tech-name">{name}</span>
         <div className="tech-header-right">
-          <button
-            className={`copy-btn ${copyStatus}`}
-            onClick={copyToClipboard}
-            title="Copy the appointments shown for this technician"
-            aria-label={
-              copyStatus === 'copied'
-                ? `Copied ${name} schedule`
-                : copyStatus === 'failed'
-                  ? `Copy failed for ${name} schedule`
-                  : `Copy shown schedule for ${name}`
-            }
-          >
-            {copyStatus === 'copied' ? (
-              <Check size={14} />
-            ) : (
-              <Copy size={14} />
-            )}
-          </button>
+          <ScheduleCopyButton
+            name={name}
+            appointments={appointments}
+            hideNames={hideNames}
+            showPrices={showPrices}
+          />
           <span className="tech-count">{appointments.length}</span>
         </div>
       </div>
