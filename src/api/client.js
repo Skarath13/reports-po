@@ -177,6 +177,10 @@ class ReportsAPIClient {
   async getAllLocationAppointments(date) {
     return this.request(`/all-locations/${date}`);
   }
+
+  async getWeeklyDuplicateBookings(date, { signal } = {}) {
+    return this.request(`/all-locations-week/${date}`, { signal });
+  }
 }
 
 export const api = new ReportsAPIClient();

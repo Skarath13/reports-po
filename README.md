@@ -56,6 +56,17 @@ current search and technician filter, in the displayed sort order. It honors
 Hide Names and Hide Prices. Technician headers retain their copy buttons in
 both interfaces; row copy buttons continue to copy one appointment.
 
+Duplicate bookings offers the selected day and **Next 7 days** in both
+interfaces. The range includes the selected Pacific calendar date plus six
+days. Matches include every location but must involve the selected location.
+Daily review/sign-off stays scoped to the day view; the weekly check is
+supplemental. Its separate authenticated backend route,
+`/api/reports/all-locations-week/:date`, shares successful results for five
+minutes per origin process and combines current Square bookings with Bloom
+appointments and manager cancellation records. It never writes bookings or
+changes the scheduled appointment caches. Deploy its Check-in origin code
+before releasing the Reports frontend.
+
 Selected shadcn Radix components live in `src/components/ui`; their pinned source
 and MIT notice are in `licenses/`. TanStack Table v8 handles local sorting.
 
@@ -68,7 +79,7 @@ npm run preview:fixture
 
 That development-only entry uses synthetic data and disables unstubbed API
 requests. It is excluded from the production build. Add `?scenario=empty`,
-`error`, `duplicates-error`, `review-error`, `loading`, `login`, or `audit` to
+`error`, `duplicates-error`, `weekly-error`, `weekly-empty`, `review-error`, `loading`, `login`, or `audit` to
 exercise the corresponding state. Fixture sign-offs live only in page memory.
 
 ## Cloudflare

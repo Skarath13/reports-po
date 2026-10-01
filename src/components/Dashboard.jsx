@@ -38,6 +38,7 @@ import { ReportCard } from './ReportCard';
 import AppointmentNotes from './AppointmentNotes';
 import DashboardShell from './DashboardShell';
 import ScheduleBrowser from './ScheduleBrowser';
+import DuplicateBookingViews from './DuplicateBookingViews';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { ReportLoading } from './LoadingState';
@@ -362,6 +363,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
   );
   const isOld = preferences.interfaceMode === 'old';
   const [classicScheduleOpen, setClassicScheduleOpen] = useState(false);
+  const [weeklyDuplicateView, setWeeklyDuplicateView] = useState(false);
   const {
     location: selectedLocation,
     hideNames,
@@ -587,6 +589,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
           notes: appointmentsWithNotes.length,
           'potential-fixes': potentialFixes.length,
           duplicates:
+            weeklyDuplicateView ||
             allLocationLoading ||
             allLocationError ||
             allLocationData?.date !== selectedDate
@@ -1020,8 +1023,9 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
             className="report-section duplicates-section"
             hidden={!sectionVisible('duplicates')}
           >
+            <DuplicateBookingViews date={selectedDate} location={location} dayLabel={isToday ? 'Today' : 'Tomorrow'} visible={sectionVisible('duplicates') && !showAudit} weekly={weeklyDuplicateView} onRangeChange={setWeeklyDuplicateView}>
             <ReviewableSectionHeader
-              title="Duplicate Clients Today"
+              title={isToday ? 'Duplicate Clients Today' : 'Duplicate Clients Tomorrow'}
               count={navCounts.duplicates}
               icon={<AlertTriangle size={20} className="section-icon" />}
               state={sectionStates.duplicates}
@@ -1117,6 +1121,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                 No duplicate clients found.
               </SectionEmptyState>
             )}
+            </DuplicateBookingViews>
           </section>
 
           <section

@@ -46,6 +46,7 @@ function ReportCard({
   customer,
   service,
   days,
+  showDays = true,
   technician,
   isCrossLocation,
   className,
@@ -90,7 +91,7 @@ function ReportCard({
       <div className="report-card-body">
         <div className="report-card-customer-row">
           <span className="report-card-customer">{customer}</span>
-          <DaysBadge days={days} />
+          {showDays && <DaysBadge days={days} />}
         </div>
         {!isDuplicates && <div className="report-card-service">{service}</div>}
       </div>

@@ -255,6 +255,21 @@ api.getAllLocationAppointments = async (date) => {
     },
   };
 };
+api.getWeeklyDuplicateBookings = async (date) => {
+  await pause();
+  if (scenario === 'weekly-error') throw new Error('Synthetic weekly check failed.');
+  const end = new Date(`${date}T12:00:00Z`);
+  end.setUTCDate(end.getUTCDate() + 6);
+  const endDate = end.toISOString().slice(0, 10);
+  const a = makeReport(date, LOCATIONS[0].squareId).rankedByLikelihood[0];
+  const b = a && { ...a, id: 'fixture-weekly-cross-location',
+    appointmentTime: new Date(`${endDate}T10:30:00-07:00`).toISOString(),
+    locationId: LOCATIONS[1].squareId, locationName: LOCATIONS[1].name,
+    serviceName: 'Volume Fill', technicianName: 'Chloe' };
+  return { date, endDate, refreshedAt: new Date().toISOString(), cacheSeconds: 300,
+    groups: a && scenario !== 'weekly-empty' ? [{ customer: a.customerName, locations: [a.locationName, b.locationName],
+      isCrossLocation: true, appointments: [a, b] }] : [] };
+};
 api.getSectionReviews = async (date, locationId) => {
   await pause();
   if (scenario === 'review-error')
