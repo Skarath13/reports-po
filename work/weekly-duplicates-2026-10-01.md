@@ -1,6 +1,6 @@
 # Weekly duplicate booking check
 
-Status: implementation verified locally; production deployment in progress.
+Status: deployed to production. Authenticated live browser verification is pending the current Reports PIN.
 The Reports checkout started clean at `ff427f7`. Pre-existing changes in the
 sibling Check-in checkout were preserved.
 
@@ -65,3 +65,30 @@ from the sibling Bloom checkout; it did not edit any credential file.
 
 Do not include the unrelated Check-in SMS, waiver, Telnyx or other pending work
 in this release. The origin and Reports shell require separate releases.
+
+## Production deployment evidence
+
+- Backend commit `f8188777`, based on the previously live `1be5023c`, contains
+  only the three scoped source files and three focused test files. It was built
+  in an isolated clean checkout; unrelated local Check-in work was preserved.
+- Guarded origin release `checkin-f8188777-20261001221026` passed candidate
+  health/readiness, local and public cutover health/readiness, edge-origin
+  health, and the exact-release operational-worker check. Rollback retains
+  `checkin-1be5023c-20261001103618`.
+- A read-only invocation of the deployed service for October 1–7 returned
+  486 active bookings, six duplicate clients, zero missing phones and zero
+  unavailable service labels. Cold fetch: 11 Square requests, 13,248ms.
+  Same-process cached repeat: 2ms, identical cached object. This probe ran
+  separately from the active backend process and did not warm its cache.
+- The public weekly endpoint rejects unauthenticated reads with HTTP 401.
+- Reports feature commit `9ff9546` deployed through linked Workers Build
+  `30848dfe-0e76-49f5-93be-612412518a58`; GitHub reports success. Public
+  metadata and HTML identify `9ff9546-20261001221306`. Served JS and CSS
+  match the locally rebuilt committed source byte for byte:
+  `index-DwMYOXnN.js` and `index-De9eH0g_.css`.
+- Check-in linked shell build `925fc5a7-47e2-483e-8629-303af57711a4` also
+  succeeded and publicly identifies `f8188777`.
+- No authenticated Reports session was available. Normal sign-in and the
+  actual live weekly UI remain unverified until the current Reports PIN is
+  supplied. Local synthetic UI verification and deployed service checks do
+  not substitute for that final signed-in check.
