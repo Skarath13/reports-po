@@ -34,6 +34,7 @@
   "vars": {
     "EDGE_APP_NAME": "checkin-reports",
     "EDGE_ENVIRONMENT": "production",
+    "CHECKIN_MAINTENANCE": "0",
     "KIOSK_RELEASE_POLICY_KV_KEY": "kiosk-release-policy:override",
     // Origin Access credentials are Worker secrets.
     "ORIGIN_BASE_URL": "https://checkin-origin.elegantlashesbykatie.com"
