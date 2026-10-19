@@ -5,8 +5,8 @@ import './ReportCard.css';
 import { getDaysSinceStyle } from '../../utils/reportAppearance';
 
 // Days Since Badge component
-export function DaysBadge({ days, inline }) {
-  const style = getDaysSinceStyle(days);
+export function DaysBadge({ days, lookupStatus, inline }) {
+  const style = getDaysSinceStyle(days, lookupStatus);
   return (
     <span
       className={`days-badge ${inline ? 'inline' : ''}`}
@@ -46,6 +46,7 @@ function ReportCard({
   customer,
   service,
   days,
+  daysLookupStatus,
   showDays = true,
   technician,
   isCrossLocation,
@@ -91,7 +92,7 @@ function ReportCard({
       <div className="report-card-body">
         <div className="report-card-customer-row">
           <span className="report-card-customer">{customer}</span>
-          {showDays && <DaysBadge days={days} />}
+          {showDays && <DaysBadge days={days} lookupStatus={daysLookupStatus} />}
         </div>
         {!isDuplicates && <div className="report-card-service">{service}</div>}
       </div>

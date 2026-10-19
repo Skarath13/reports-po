@@ -345,6 +345,12 @@ function getStaffSnapshotEntry(snapshot, technicianName) {
   );
 }
 
+function getReportPricingNotice(report, showPrices) {
+  return showPrices && report?.pricingAvailability?.available === false
+    ? 'Prices are unavailable. Appointment details are still available.'
+    : null;
+}
+
 function Dashboard({ user, onLogout, initialInterfaceMode }) {
   return (
     <DashboardWorkspace
@@ -480,7 +486,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
           .map((appointment) => [
             appointment.id,
             {
-              score: appointment.futureIssueLikelihood || 0,
+              score: Number.isFinite(appointment.futureIssueLikelihood) ? appointment.futureIssueLikelihood : null,
               components: appointment.riskScoreComponents || null,
               reason: appointment.riskScoreReason || null,
             },
@@ -671,6 +677,9 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
       {/* Main Report Content */}
       {report && !showSkeleton && (
         <main className="report-content" id="report-main" tabIndex={-1}>
+          {getReportPricingNotice(report, showPrices) && (
+            <p role="status">{getReportPricingNotice(report, showPrices)}</p>
+          )}
           <div
             className="overview-metrics"
             aria-label="Report summary"
@@ -941,6 +950,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                       customer={titleCase(appointment.customerName)}
                       service={abbreviateService(appointment.serviceName)}
                       days={appointment.daysSinceLastAppointment}
+                      daysLookupStatus={appointment.daysSinceLookupStatus}
                       technician={cleanTechName(appointment.technicianName)}
                       reviewEntry={entry}
                       isUpdated={isUpdated}
@@ -996,6 +1006,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                       customer={titleCase(appointment.customerName)}
                       service={abbreviateService(appointment.serviceName)}
                       days={appointment.daysSinceLastAppointment}
+                      daysLookupStatus={appointment.daysSinceLookupStatus}
                       technician={cleanTechName(appointment.technicianName)}
                       reviewEntry={entry}
                       isUpdated={Boolean(
@@ -1072,6 +1083,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                       days={
                         duplicate.appointments[0]?.daysSinceLastAppointment
                       }
+                      daysLookupStatus={duplicate.appointments[0]?.daysSinceLookupStatus}
                       technician={cleanTechName(
                         duplicate.appointments[0]?.technicianName,
                       )}
@@ -1156,6 +1168,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                       customer={titleCase(appointment.customerName)}
                       service={abbreviateService(appointment.serviceName)}
                       days={appointment.daysSinceLastAppointment}
+                      daysLookupStatus={appointment.daysSinceLookupStatus}
                       technician={cleanTechName(appointment.technicianName)}
                       technicianLabel="Assigned"
                       reviewEntry={entry}
@@ -1307,9 +1320,7 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                   <p>With {selectedAppointment.technicianName}</p>
                   <div>
                     <Badge variant="secondary">
-                      {selectedAppointment.daysSinceLastAppointment == null
-                        ? 'New client'
-                        : `${selectedAppointment.daysSinceLastAppointment} days since last appointment`}
+                      {formatAppointmentHistoryDetail(selectedAppointment)}
                     </Badge>
                     {showPrices &&
                       getReportAppointmentPriceBadge(selectedAppointment) && (
@@ -1331,20 +1342,20 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                   </div>
                 </div>
                 {!hideNames &&
-                  likelihoodMap[selectedAppointment.id]?.score > 0 && (
+                  (likelihoodMap[selectedAppointment.id]?.score == null || likelihoodMap[selectedAppointment.id]?.score > 0) && (
                     <details className="detail-risk">
                       <summary>
                         Risk score{' '}
                         <span>
-                          {likelihoodMap[selectedAppointment.id].score}/100
+                          {Number.isFinite(likelihoodMap[selectedAppointment.id]?.score) ? `${likelihoodMap[selectedAppointment.id].score}/100` : 'Unknown'}
                         </span>
                       </summary>
                       <p>Heuristic from appointment history.</p>
                       <pre>
                         {buildRiskTooltip(
-                          likelihoodMap[selectedAppointment.id].score,
-                          likelihoodMap[selectedAppointment.id].components,
-                          likelihoodMap[selectedAppointment.id].reason,
+                          likelihoodMap[selectedAppointment.id]?.score,
+                          likelihoodMap[selectedAppointment.id]?.components,
+                          likelihoodMap[selectedAppointment.id]?.reason,
                         )}
                       </pre>
                     </details>
@@ -1366,12 +1377,15 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
 }
 
 // Technician Column Component with Copy functionality
+function formatAppointmentHistoryDetail(appointment) {
+  const label = getDaysSinceStyle(appointment.daysSinceLastAppointment, appointment.daysSinceLookupStatus).label;
+  if (label === 'Unknown') return 'History unknown';
+  if (label === 'New') return 'New client';
+  return `${appointment.daysSinceLastAppointment} days since last appointment`;
+}
 function formatAppointmentClipboardLine(appointment, hideNames, showPrices) {
   const time = formatTime(appointment.appointmentTime);
-  const days =
-    appointment.daysSinceLastAppointment == null
-      ? 'New'
-      : `${appointment.daysSinceLastAppointment}d`;
+  const days = getDaysSinceStyle(appointment.daysSinceLastAppointment, appointment.daysSinceLookupStatus).label;
   const service = abbreviateService(appointment.serviceName);
   const baseLine = hideNames
     ? `${time} - ${service} (${days})`
@@ -1500,6 +1514,7 @@ function TechnicianColumn({
 
 // Build enhanced tooltip for risk score breakdown (additive algorithm)
 function buildRiskTooltip(score, components, reason) {
+  if (!Number.isFinite(score)) return 'Appointment history unavailable. Risk score unknown.';
   if (!components) {
     return `Risk score: ${score}/100. Heuristic from appointment history.`;
   }
@@ -1599,7 +1614,7 @@ function AppointmentRow({
 }) {
   const [copyStatus, setCopyStatus] = useState('idle');
   const copyResetRef = useRef(null);
-  const daysStyle = getDaysSinceStyle(appointment.daysSinceLastAppointment);
+  const daysStyle = getDaysSinceStyle(appointment.daysSinceLastAppointment, appointment.daysSinceLookupStatus);
   const shortService = abbreviateService(appointment.serviceName);
   const priceBadge = showPrices
     ? getReportAppointmentPriceBadge(appointment)
@@ -1609,11 +1624,10 @@ function AppointmentRow({
 
   // Get likelihood data from map (using appointment.id) or from appointment directly
   const likelihoodData = likelihoodMap?.[appointment.id];
-  const likelihood =
-    likelihoodData?.score ??
-    likelihoodData ??
-    appointment.futureIssueLikelihood ??
-    0;
+  const rawLikelihood = likelihoodData && typeof likelihoodData === 'object'
+    ? likelihoodData.score
+    : likelihoodData ?? appointment.futureIssueLikelihood;
+  const likelihood = Number.isFinite(rawLikelihood) ? rawLikelihood : null;
   const components = likelihoodData?.components || null;
   const reason = likelihoodData?.reason || null;
   const likelihoodStyle = getLikelihoodStyle(likelihood);
@@ -1683,7 +1697,7 @@ function AppointmentRow({
           <span className="apt-customer-name">
             {titleCase(appointment.customerName)}
           </span>
-          {likelihood > 0 && (
+          {(likelihood === null || likelihood > 0) && (
             <RiskScore
               score={likelihood}
               color={likelihoodStyle.dot}

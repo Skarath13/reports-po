@@ -1,7 +1,12 @@
 // Preserve report intervals while allowing both dashboard themes to style the badges.
-export function getDaysSinceStyle(days) {
+export function getDaysSinceStyle(days, lookupStatus) {
+  const validDays = (typeof days === 'number' && Number.isFinite(days)) ||
+    (typeof days === 'string' && days.trim() !== '' && Number.isFinite(Number(days)));
+  const hasHistory = validDays &&
+    (lookupStatus == null || lookupStatus === 'confirmed-history');
+  const confirmedNew = days == null && lookupStatus === 'confirmed-new';
   const category =
-    days == null
+    !hasHistory
       ? 'new'
       : days <= 6
         ? 'recent'
@@ -15,6 +20,6 @@ export function getDaysSinceStyle(days) {
   return {
     bg: `var(--days-${category}-bg)`,
     text: `var(--days-${category}-text)`,
-    label: days == null ? 'New' : `${days}d`,
+    label: hasHistory ? `${days}d` : confirmedNew ? 'New' : 'Unknown',
   };
 }

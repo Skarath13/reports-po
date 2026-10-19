@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import './RiskScore.css';
 
 export default function RiskScore({ score, color, description }) {
+  const known = Number.isFinite(score);
   const [open, setOpen] = useState(false);
   const modeRef = useRef('hover');
   const closeTimerRef = useRef(null);
@@ -35,7 +36,7 @@ export default function RiskScore({ score, color, description }) {
         className="risk-score-trigger"
         style={{ color }}
         title=""
-        aria-label={`Risk score ${score} out of 100. Show breakdown`}
+        aria-label={known ? `Risk score ${score} out of 100. Show breakdown` : 'Risk score unknown. Show explanation'}
         onPointerEnter={enter}
         onPointerLeave={leave}
         onClick={(event) => {
@@ -46,7 +47,7 @@ export default function RiskScore({ score, color, description }) {
           changeOpen(next);
         }}
       >
-        {score}
+        {known ? score : 'Unknown'}
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
@@ -71,7 +72,7 @@ export default function RiskScore({ score, color, description }) {
               <X size={18} />
             </Popover.Close>
           </div>
-          <pre>{description}</pre>
+          <pre>{known ? description : 'Appointment history unavailable. Risk score unknown.'}</pre>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
