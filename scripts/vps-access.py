@@ -3,6 +3,31 @@
 import json, os, shlex, shutil, stat, subprocess, sys
 from pathlib import Path
 
+def control_path():
+    ssh = Path.home() / '.ssh'
+    def private_directory(path):
+        s = path.lstat()
+        if path.resolve() != path or not stat.S_ISDIR(s.st_mode) or s.st_uid != os.getuid() or stat.S_IMODE(s.st_mode) != 0o700:
+            raise ValueError('Private owned SSH control directory required.')
+    private_directory(ssh)
+    directory = ssh / 'checkin-vps-control'
+    try:
+        directory.mkdir(mode=0o700)
+    except FileExistsError:
+        pass
+    private_directory(directory)
+    path = directory / 'root-24.199.121.72.sock'
+    # macOS allows 103 pathname bytes; OpenSSH appends a 17-byte temp suffix.
+    if len(os.fsencode(path)) > 86:
+        raise ValueError('SSH control pathname is too long.')
+    try:
+        s = path.lstat()
+    except FileNotFoundError:
+        return path
+    if not stat.S_ISSOCK(s.st_mode) or s.st_uid != os.getuid() or stat.S_IMODE(s.st_mode) != 0o600 or s.st_nlink != 1:
+        raise ValueError('Private owned SSH control socket required.')
+    return path
+
 def main():
     root = Path(__file__).resolve().parents[1]
     path = root / '.env.vps.local'
@@ -29,10 +54,11 @@ def main():
         raise ValueError('Use --check for offline validation, or -- followed by an authorized remote command.')
     if not shutil.which('sshpass'):
         raise ValueError('Existing sshpass executable is required.')
+    socket = control_path()
     env = os.environ.copy()
     env.pop('VPS_PASS', None)
     env['SSHPASS'] = values['VPS_PASS']
-    command = ['sshpass', '-e', 'ssh', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', '-o', 'NumberOfPasswordPrompts=1', '-o', 'PreferredAuthentications=password', '-o', 'PubkeyAuthentication=no', 'root@24.199.121.72', shlex.join(sys.argv[2:])]
+    command = ['sshpass', '-e', 'ssh', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', '-o', 'NumberOfPasswordPrompts=1', '-o', 'PreferredAuthentications=password', '-o', 'PubkeyAuthentication=no', '-o', 'ControlMaster=auto', '-o', 'ControlPersist=60', '-o', 'ControlPath='+str(socket), 'root@24.199.121.72', shlex.join(sys.argv[2:])]
     return subprocess.run(command, env=env).returncode
 
 if __name__ == '__main__':
