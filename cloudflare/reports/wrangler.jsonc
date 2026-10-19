@@ -26,14 +26,6 @@
       "id": "62298b62c8a644898c7f0aa5c875b075"
     }
   ],
-  "d1_databases": [
-    {
-      "binding": "REPORTS_GOVERNANCE_DB",
-      "database_name": "reports-governance",
-      "database_id": "28efe201-bcfa-4e1e-8549-fa019e5d7998",
-      "migrations_dir": "./migrations"
-    }
-  ],
   "build": {
     "command": "npm run build",
     "cwd": ".",
@@ -43,12 +35,11 @@
     "EDGE_APP_NAME": "checkin-reports",
     "EDGE_ENVIRONMENT": "production",
     "KIOSK_RELEASE_POLICY_KV_KEY": "kiosk-release-policy:override",
-    // Origin Access credentials and GOVERNANCE_FINGERPRINT_SECRET are Worker secrets.
+    // Origin Access credentials are Worker secrets.
     "ORIGIN_BASE_URL": "https://checkin-origin.elegantlashesbykatie.com"
   },
   "secrets": {
     "required": [
-      "GOVERNANCE_FINGERPRINT_SECRET",
       "ORIGIN_ACCESS_CLIENT_ID",
       "ORIGIN_ACCESS_CLIENT_SECRET"
     ]

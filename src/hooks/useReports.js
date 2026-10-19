@@ -37,7 +37,7 @@ function getFreshCachedData(locationId, date, viewerId) {
 export function useFullReport(locationId, date, viewerId) {
   const contextKey = `${locationId || ''}|${date || ''}|${viewerId || ''}`;
   // Cached report contents are not rendered until the governance view event is
-  // confirmed. This keeps a D1 outage from bypassing the audited-view gate.
+  // confirmed. This keeps a governance storage outage from bypassing the audited-view gate.
   const [data, setData] = useState(null);
   const [dataContext, setDataContext] = useState('');
   const [loading, setLoading] = useState(Boolean(locationId && date));

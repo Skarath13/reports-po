@@ -100,30 +100,27 @@ Manual production deploy command:
 npx wrangler deploy --config cloudflare/reports/wrangler.jsonc
 ```
 
-Reports governance uses the dedicated D1 database `reports-governance` (`28efe201-bcfa-4e1e-8549-fa019e5d7998`). Apply its versioned schema before the first governance-enabled deploy:
+Reports governance, including login/view audit events, whole-report sign-offs,
+section reviews, acknowledgements and fingerprinting, runs in the Check-in
+Express API on the VPS. The Worker forwards `/api/reports/*` to the protected
+origin once; it does not query D1 or hold the governance fingerprint secret.
 
-```bash
-npx wrangler d1 migrations apply reports-governance --remote --config cloudflare/reports/wrangler.jsonc
-```
-
-The database stores only governance policy and immutable login, first-view, and sign-off events. It does not store PINs, report contents, Supabase service credentials, or client data. The Worker verifies the existing report token through the origin before recording or returning governance data.
+The active implementation is `server/services/reportsGovernanceService.js` and
+`server/services/reportsGovernance/` in the Check-in repository. Its PostgreSQL
+schema and operational release procedures belong to that repository. Do not
+apply the retired Reports D1 migrations or re-enable an edge governance writer.
+The retired transfer endpoint remains explicitly closed with HTTP 404.
 
 The zone also has Cloudflare ruleset `2aaff556277146199a96b1cba9ecf16f` for `POST /api/reports/auth/login`, scoped to `reports.elegantlashesbykatie.com`, at 5 attempts per client IP per 10 seconds. The zone’s current plan only permits a 10-second period and 10-second mitigation timeout; the origin’s existing login throttling remains in place for longer-window protection.
-
-Last push-trigger verification: 2026-06-22 after explicit reports Wrangler config restore.
 
 Worker secrets should only be:
 
 - `ORIGIN_ACCESS_CLIENT_ID`
 - `ORIGIN_ACCESS_CLIENT_SECRET`
-- `GOVERNANCE_FINGERPRINT_SECRET`
 
-Section reviews require migration `0002_section_governance.sql` and a stable,
-randomly generated fingerprinting secret of at least 32 characters. Set that
-secret with `npx wrangler secret put GOVERNANCE_FINGERPRINT_SECRET --config cloudflare/reports/wrangler.jsonc`
-before deploying section reviews. Its value stays in Worker secrets and must not
-be committed or included in the browser build. Rotating it invalidates existing
-review fingerprints.
+The governance fingerprint secret stays server-side in the VPS API. Rotating
+it invalidates existing review fingerprints; it is not a browser build variable
+or a Reports Worker deployment prerequisite.
 
 Do not add Supabase service-role, Square, Twilio, Brevo, Bloom, deploy-health, or VPS secrets to this browser app or Worker.
 
