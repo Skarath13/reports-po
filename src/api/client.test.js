@@ -72,3 +72,29 @@ describe('ReportsAPIClient auth failures', () => {
     window.removeEventListener('auth-expired', authExpired);
   });
 });
+
+describe('Reports principal revocation and session races', () => {
+  beforeEach(() => { api.setToken('synthetic-old-session'); global.fetch = vi.fn(); });
+  afterEach(() => { api.setToken(null); delete global.fetch; });
+  test.each([[403, 'AUDIT_FORBIDDEN'], [503, 'AUTH_UNAVAILABLE']])('%s %s preserves the authenticated session', async (status, code) => {
+    global.fetch.mockResolvedValue({ status, ok: false, json: async () => ({ error: code, code }) });
+    await expect(api.verifyToken()).rejects.toMatchObject({ code, status });
+    expect(api.getToken()).toBe('synthetic-old-session');
+  });
+  test('explicit revoked access clears the token and emits the denial', async () => {
+    const listener = vi.fn(); window.addEventListener('auth-expired', listener);
+    try {
+      global.fetch.mockResolvedValue({ status: 403, ok: false, json: async () => ({ error: 'Reports access is no longer available', code: 'REPORT_ACCESS_REVOKED' }) });
+      await expect(api.verifyToken()).rejects.toThrow('Reports access is no longer available');
+      expect(api.getToken()).toBeNull(); expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener.mock.calls[0][0].detail.message).toBe('Reports access is no longer available');
+    } finally { window.removeEventListener('auth-expired', listener); }
+  });
+  test.each([200, 401])('old session response %s cannot replace or clear the next session', async status => {
+    let resolve; global.fetch.mockImplementation(() => new Promise(r => { resolve = r; }));
+    const request = api.verifyToken(); const rejected = expect(request).rejects.toMatchObject({ code: 'AUTH_CONTEXT_CHANGED' });
+    api.logout(); api.setToken('synthetic-new-session');
+    resolve({ status, ok: status === 200, json: async () => ({ valid: true }) }); await rejected;
+    expect(api.getToken()).toBe('synthetic-new-session');
+  });
+});

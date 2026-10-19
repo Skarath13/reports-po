@@ -3,3 +3,28 @@
     transform: rotate(360deg);
   }
 }
+
+.reports-session-recovery {
+  width: min(32rem, calc(100% - 3rem));
+  margin: 3rem auto;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-raised);
+  color: var(--foreground);
+}
+.reports-session-recovery h1 { margin: 0; font-size: 1.25rem; line-height: 1.4; }
+.reports-session-recovery p { margin: 1rem 0; color: var(--muted-foreground); }
+.reports-session-recovery-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.reports-session-recovery-actions button {
+  min-height: 44px;
+  min-width: 88px;
+  padding: .625rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: .625rem;
+  background: var(--surface-subtle);
+  color: var(--foreground);
+  cursor: pointer;
+}
+.reports-session-recovery-actions button:first-child { background: var(--primary); color: var(--primary-foreground); }
+.reports-session-recovery-actions button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }

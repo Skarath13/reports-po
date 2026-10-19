@@ -9,10 +9,13 @@ class ReportsAPIClient {
   constructor() {
     this.token = localStorage.getItem('reportToken');
     this.viewSessionId = null;
+    this.authEpoch = 0;
   }
 
   setToken(token) {
+    this.authEpoch += 1;
     this.token = token;
+    window.dispatchEvent(new CustomEvent('report-auth-changed'));
     if (token) {
       localStorage.setItem('reportToken', token);
     } else {
@@ -53,14 +56,16 @@ class ReportsAPIClient {
   }
 
   async request(endpoint, options = {}) {
+    const authEpoch = this.authEpoch;
+    const requestToken = this.getToken();
     const url = `${API_BASE}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
-    if (this.getToken()) {
-      headers['x-report-token'] = this.getToken();
+    if (requestToken) {
+      headers['x-report-token'] = requestToken;
     }
 
     const response = await fetch(url, {
@@ -70,11 +75,20 @@ class ReportsAPIClient {
 
     const data = await response.json().catch(() => null);
 
-    if (response.status === 401) {
+    if (authEpoch !== this.authEpoch || requestToken !== this.getToken()) {
+      const error = new Error('Reports session changed. Please try again.');
+      error.code = 'AUTH_CONTEXT_CHANGED';
+      throw error;
+    }
+
+    const accessRevoked = response.status === 403 && data?.code === 'REPORT_ACCESS_REVOKED';
+    if (response.status === 401 || accessRevoked) {
       this.setToken(null);
 
       if (endpoint !== '/auth/login') {
-        window.dispatchEvent(new CustomEvent('auth-expired'));
+        window.dispatchEvent(new CustomEvent('auth-expired', {
+          detail: accessRevoked ? { message: data.error || 'Reports access is no longer available' } : null,
+        }));
       }
 
       throw new Error(data?.error || data?.msg || 'Authentication failed');

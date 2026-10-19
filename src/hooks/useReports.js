@@ -13,6 +13,9 @@ export const LOCATIONS = [
 // In-memory cache for reports (persists across tab switches)
 const reportCache = new Map();
 
+// Cache contents never survive logout, revocation or a new authenticated session.
+window.addEventListener('report-auth-changed', () => reportCache.clear());
+
 // Helper to get cache key
 function getCacheKey(locationId, date, viewerId) {
   const location = LOCATIONS.find(l => l.id === locationId || l.squareId === locationId);
