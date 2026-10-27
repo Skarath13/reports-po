@@ -10,6 +10,8 @@ export const LOCATIONS = [
   { id: 'newport-beach', name: 'Newport Beach', squareId: 'LR7WA061BB4KA', color: '#f39c12' },
 ];
 
+export const REPORT_VERSION_POLL_MS = 20 * 1000;
+
 // In-memory cache for reports (persists across tab switches)
 const reportCache = new Map();
 
@@ -53,12 +55,18 @@ export function useFullReport(locationId, date, viewerId) {
   // Track current request to handle race conditions
   const requestIdRef = useRef(0);
   const abortControllerRef = useRef(null);
+  // Version of the source rows the shown report was built from.
+  const reportVersionRef = useRef(null);
+  const fetchInFlightRef = useRef(false);
+  const lastFetchAtRef = useRef(0);
+  const shownContextRef = useRef('');
 
   // When location changes, immediately check cache
   useEffect(() => {
     const contextKey = `${locationId || ''}|${date || ''}|${viewerId || ''}`;
     if (currentContextRef.current !== contextKey) {
       currentContextRef.current = contextKey;
+      reportVersionRef.current = null;
       const cached = getFreshCachedData(locationId, date, viewerId);
       if (cached) {
         // The cache entry was created only after the original full-report
@@ -75,10 +83,13 @@ export function useFullReport(locationId, date, viewerId) {
     }
   }, [locationId, date, viewerId]);
 
-  const fetchReport = useCallback(async (forceRefresh = false) => {
+  // background: refresh the shown report without blanking it (polls and timers).
+  const fetchReport = useCallback(async (forceRefresh = false, { background = false } = {}) => {
     // Invalidate an older fetch even when the next location is served from cache.
     const currentRequestId = ++requestIdRef.current;
     if (abortControllerRef.current) abortControllerRef.current.abort();
+    // An aborted fetch never clears this itself; the newest request owns it.
+    fetchInFlightRef.current = false;
     if (!locationId || !date) {
       setLoading(false);
       return;
@@ -95,6 +106,7 @@ export function useFullReport(locationId, date, viewerId) {
         setData(cached.data);
         setDataContext(`${locationId || ''}|${date || ''}|${viewerId || ''}`);
         setLastUpdated(new Date(cached.timestamp));
+        reportVersionRef.current = cached.version ?? null;
         setError(null);
         setLoading(false);
         return;
@@ -103,13 +115,22 @@ export function useFullReport(locationId, date, viewerId) {
 
     // Create new abort controller
     abortControllerRef.current = new AbortController();
+    fetchInFlightRef.current = true;
 
-    setLoading(true);
+    const contextKey = `${locationId || ''}|${date || ''}|${viewerId || ''}`;
+    if (!(background && shownContextRef.current === contextKey)) setLoading(true);
     setError(null);
 
     try {
       const location = LOCATIONS.find(l => l.id === locationId || l.squareId === locationId);
       const squareId = location?.squareId || locationId;
+      // Start the version read before the report so a change during the build
+      // is seen on the next poll. It is never awaited: it cannot delay or fail
+      // the report.
+      const versionPromise = (typeof api.getReportVersion === 'function'
+        ? Promise.resolve(api.getReportVersion(date, squareId, { signal: abortControllerRef.current.signal }))
+        : Promise.resolve(null)
+      ).catch(() => null);
       const report = await api.getFullReport(date, squareId, {
         signal: abortControllerRef.current.signal,
       });
@@ -119,14 +140,19 @@ export function useFullReport(locationId, date, viewerId) {
         const now = Date.now();
 
         // Cache the result
-        reportCache.set(cacheKey, {
-          data: report,
-          timestamp: now
-        });
+        const entry = { data: report, timestamp: now, version: null };
+        reportCache.set(cacheKey, entry);
 
         setData(report);
-        setDataContext(`${locationId || ''}|${date || ''}|${viewerId || ''}`);
+        setDataContext(contextKey);
+        shownContextRef.current = contextKey;
         setLastUpdated(new Date(now));
+        lastFetchAtRef.current = now;
+        reportVersionRef.current = null;
+        versionPromise.then((version) => {
+          entry.version = version;
+          if (currentRequestId === requestIdRef.current) reportVersionRef.current = version;
+        });
       }
     } catch (err) {
       // Only update error if this is still the current request
@@ -135,6 +161,7 @@ export function useFullReport(locationId, date, viewerId) {
       }
     } finally {
       if (currentRequestId === requestIdRef.current) {
+        fetchInFlightRef.current = false;
         setLoading(false);
       }
     }
@@ -152,9 +179,44 @@ export function useFullReport(locationId, date, viewerId) {
     };
   }, [fetchReport]);
 
-  // Auto-refresh every 2 minutes
+  // Every 20 seconds, a cheap version check rebuilds the report only when its
+  // Square, Bloom or check-in rows changed. If the check is unavailable the
+  // 2-minute refresh below still runs.
   useEffect(() => {
-    const interval = setInterval(() => fetchReport(true), 2 * 60 * 1000);
+    if (!locationId || !date) return undefined;
+    const location = LOCATIONS.find(l => l.id === locationId || l.squareId === locationId);
+    const squareId = location?.squareId || locationId;
+    let checking = false;
+    let cancelled = false;
+    const controller = new AbortController();
+    const interval = setInterval(async () => {
+      // Never interrupt a report that is still loading.
+      if (checking || document.hidden || fetchInFlightRef.current || reportVersionRef.current === null) return;
+      checking = true;
+      try {
+        const version = await api.getReportVersion(date, squareId, { signal: controller.signal });
+        if (!cancelled && !fetchInFlightRef.current && version && version !== reportVersionRef.current) {
+          fetchReport(true, { background: true });
+        }
+      } catch {
+        // The 2-minute refresh covers a failed check.
+      } finally {
+        checking = false;
+      }
+    }, REPORT_VERSION_POLL_MS);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearInterval(interval);
+    };
+  }, [locationId, date, fetchReport]);
+
+  // Auto-refresh every 2 minutes, skipped right after a change-driven refresh.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (fetchInFlightRef.current || Date.now() - lastFetchAtRef.current < 60 * 1000) return;
+      fetchReport(true, { background: true });
+    }, 2 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchReport]);
 

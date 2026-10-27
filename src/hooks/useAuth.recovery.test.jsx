@@ -36,11 +36,13 @@ test('revoked loaded session is cleared with the actual denial message', async (
 });
 
 test('same-user new session cannot reuse the report from the previous login', async () => {
-  global.fetch.mockResolvedValueOnce(reply(200, { marker: 'old-report' })).mockResolvedValueOnce(reply(200, { marker: 'new-report' }));
+  // Version checks are answered separately; the two report fetches stay in order.
+  const reports = [reply(200, { marker: 'old-report' }), reply(200, { marker: 'new-report' })];
+  global.fetch.mockImplementation(async (url) => (String(url).includes('/version/') ? reply(200, { version: 'v1' }) : reports.shift()));
   const first = renderHook(() => useFullReport('tustin', '2026-10-14', 'same-user'));
   await waitFor(() => expect(first.result.current.data?.marker).toBe('old-report')); first.unmount();
   act(() => { api.logout(); api.setToken('synthetic-new-session'); });
   const second = renderHook(() => useFullReport('tustin', '2026-10-14', 'same-user'));
   await waitFor(() => expect(second.result.current.data?.marker).toBe('new-report'));
-  expect(global.fetch).toHaveBeenCalledTimes(2);
+  expect(global.fetch.mock.calls.filter(([url]) => String(url).includes('/full/'))).toHaveLength(2);
 });

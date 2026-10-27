@@ -133,6 +133,12 @@ class ReportsAPIClient {
     });
   }
 
+  // Cheap fingerprint of the report's source rows (no audited view).
+  async getReportVersion(date, locationId, { signal } = {}) {
+    const result = await this.request(`/version/${date}/${locationId}`, { signal });
+    return typeof result?.version === 'string' ? result.version : null;
+  }
+
   async getAppointmentNoteHistory(date, locationId, appointmentId, { offset = 0, limit = 5 } = {}) {
     const query = new URLSearchParams({
       offset: String(offset),
