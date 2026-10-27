@@ -205,6 +205,7 @@ api.getFullReport = async (date, locationId) => {
   if (scenario === 'error')
     throw new Error('Synthetic report request failed.');
   const report = makeReport(date, locationId);
+  report.sources = { bloom: { status: scenario === 'bloom-down' ? 'unavailable' : 'ok' } };
   if (scenario === 'updates' && previewChanged) {
     for (const index of [0, 7, 11]) {
       const appointment = report.rankedByLikelihood[index];

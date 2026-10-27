@@ -1,6 +1,12 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { AppointmentRow, formatAppointmentClipboardLine, getAppointmentSource } from './Dashboard';
+import { fireEvent, render, screen } from '@testing-library/react';
+import {
+  AppointmentRow,
+  BloomSourceWarning,
+  formatAppointmentClipboardLine,
+  getAppointmentSource,
+  getBloomUnavailableNotice,
+} from './Dashboard';
 
 const base = {
   id: 'square-1',
@@ -45,5 +51,44 @@ describe('appointment booking source', () => {
   test('keeps the copied line unchanged for staff messages', () => {
     expect(formatAppointmentClipboardLine({ ...base, source: 'bloom' }, true, false))
       .toBe('2:30 PM - Natural Fill (15d)');
+  });
+});
+
+describe('Bloom availability notice', () => {
+  const date = '2026-10-28';
+  const ok = { bloom: { status: 'ok' } };
+  const down = { bloom: { status: 'unavailable' } };
+
+  test.each([
+    [{ sources: ok }, { date, sources: ok }, null],
+    [{}, null, null],
+    [{ sources: down }, { date, sources: ok }, 'report'],
+    [{ sources: down }, { date, sources: down }, 'report'],
+    [{ sources: ok }, { date, sources: down }, 'duplicates'],
+    [{ sources: ok }, { date: '2026-10-27', sources: down }, null],
+  ])('report %j with all-locations %j gives %s', (report, allLocations, expected) => {
+    const notice = getBloomUnavailableNotice(report, allLocations, date);
+    expect(notice?.scope ?? null).toBe(expected);
+  });
+
+  test('says the schedule may be missing Bloom bookings', () => {
+    expect(getBloomUnavailableNotice({ sources: down }, null, date).message)
+      .toMatch(/Bloom bookings could not be loaded/);
+  });
+});
+
+describe('Bloom source warning banner', () => {
+  test('announces the gap and retries both report sources', () => {
+    const onRetry = vi.fn();
+    const notice = getBloomUnavailableNotice({ sources: { bloom: { status: 'unavailable' } } }, null, '2026-10-28');
+    render(<BloomSourceWarning notice={notice} onRetry={onRetry} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Bloom bookings could not be loaded');
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  test('renders nothing when Bloom loaded', () => {
+    const { container } = render(<BloomSourceWarning notice={null} onRetry={() => {}} />);
+    expect(container).toBeEmptyDOMElement();
   });
 });

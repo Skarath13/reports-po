@@ -351,6 +351,42 @@ function getReportPricingNotice(report, showPrices) {
     : null;
 }
 
+// The API still returns Square rows when Bloom cannot be read; never let that
+// pass as a complete day while bookings move to Bloom.
+function getBloomUnavailableNotice(report, allLocationData, selectedDate) {
+  if (report?.sources?.bloom?.status === 'unavailable') {
+    return {
+      scope: 'report',
+      message:
+        'Bloom bookings could not be loaded. This report shows Square bookings only and may be missing appointments.',
+    };
+  }
+  if (
+    allLocationData?.date === selectedDate &&
+    allLocationData?.sources?.bloom?.status === 'unavailable'
+  ) {
+    return {
+      scope: 'duplicates',
+      message:
+        'Bloom bookings could not be loaded for the cross-location duplicate check. It covers Square bookings only.',
+    };
+  }
+  return null;
+}
+
+function BloomSourceWarning({ notice, onRetry }) {
+  if (!notice) return null;
+  return (
+    <div className="source-warning">
+      <AlertTriangle size={18} aria-hidden="true" />
+      <span role="alert">{notice.message}</span>
+      <Button variant="outline" onClick={onRetry}>
+        Try again
+      </Button>
+    </div>
+  );
+}
+
 function Dashboard({ user, onLogout, initialInterfaceMode }) {
   return (
     <DashboardWorkspace
@@ -509,6 +545,12 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
       duplicates: duplicateSnapshot,
     }),
     [duplicateSnapshot, error, loading, report],
+  );
+
+  const bloomNotice = getBloomUnavailableNotice(
+    report,
+    allLocationData,
+    selectedDate,
   );
 
   const refreshReviewSources = useCallback(() => {
@@ -680,6 +722,10 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
           {getReportPricingNotice(report, showPrices) && (
             <p role="status">{getReportPricingNotice(report, showPrices)}</p>
           )}
+          <BloomSourceWarning
+            notice={bloomNotice}
+            onRetry={refreshReviewSources}
+          />
           <div
             className="overview-metrics"
             aria-label="Report summary"
@@ -1830,5 +1876,11 @@ function StaffReviewChip({ staff, isUpdated, reviewEntry, onUpdateSeen }) {
   );
 }
 
-export { AppointmentRow, formatAppointmentClipboardLine, getAppointmentSource };
+export {
+  AppointmentRow,
+  formatAppointmentClipboardLine,
+  BloomSourceWarning,
+  getAppointmentSource,
+  getBloomUnavailableNotice,
+};
 export default Dashboard;
