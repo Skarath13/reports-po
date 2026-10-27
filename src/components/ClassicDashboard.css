@@ -172,6 +172,7 @@
 }
 .classic-interface .apt-days,
 .classic-interface .apt-price,
+.classic-interface .apt-source,
 .classic-interface .days-badge {
   font-size: 0.75rem;
 }

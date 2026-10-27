@@ -1322,6 +1322,11 @@ function DashboardWorkspace({ user, onLogout, initialInterfaceMode }) {
                     <Badge variant="secondary">
                       {formatAppointmentHistoryDetail(selectedAppointment)}
                     </Badge>
+                    {getAppointmentSource(selectedAppointment) && (
+                      <Badge variant="outline">
+                        {getAppointmentSource(selectedAppointment).title}
+                      </Badge>
+                    )}
                     {showPrices &&
                       getReportAppointmentPriceBadge(selectedAppointment) && (
                         <Badge
@@ -1600,6 +1605,29 @@ function buildRiskTooltip(score, components, reason) {
   return lines.join('\n');
 }
 
+const APPOINTMENT_SOURCES = {
+  bloom: { key: 'bloom', label: 'Bloom', title: 'Booked in Bloom' },
+  square: { key: 'square', label: 'Square', title: 'Booked in Square' },
+};
+
+// Bloom IDs are prefixed `bloom:` by the Check-in merge; prefer that evidence
+// over a generic source default so mirrored rows are never mislabeled Square.
+function getAppointmentSource(appointment) {
+  const declared = String(
+    appointment?.source || appointment?.appointmentSource || '',
+  ).toLowerCase();
+  if (
+    declared === 'bloom' ||
+    appointment?.bloomAppointmentId ||
+    String(appointment?.id || '').startsWith('bloom:')
+  ) {
+    return APPOINTMENT_SOURCES.bloom;
+  }
+  return Object.hasOwn(APPOINTMENT_SOURCES, declared)
+    ? APPOINTMENT_SOURCES[declared]
+    : null;
+}
+
 // Single Appointment Row - Clean Excel-like styling
 function AppointmentRow({
   appointment,
@@ -1620,6 +1648,7 @@ function AppointmentRow({
     ? getReportAppointmentPriceBadge(appointment)
     : null;
   const appointmentTime = formatTime(appointment.appointmentTime);
+  const bookingSource = getAppointmentSource(appointment);
   const updateHandlers = useUpdateAcknowledgement(isUpdated, onUpdateSeen, reviewEntry);
 
   // Get likelihood data from map (using appointment.id) or from appointment directly
@@ -1729,6 +1758,14 @@ function AppointmentRow({
               {priceBadge.label}
             </span>
           )}
+          {bookingSource && (
+            <span
+              className={`apt-source apt-source-${bookingSource.key}`}
+              title={bookingSource.title}
+            >
+              {bookingSource.label}
+            </span>
+          )}
         </span>
       </Cell>
       <Cell className="apt-row-actions">
@@ -1793,5 +1830,5 @@ function StaffReviewChip({ staff, isUpdated, reviewEntry, onUpdateSeen }) {
   );
 }
 
-export { AppointmentRow, formatAppointmentClipboardLine };
+export { AppointmentRow, formatAppointmentClipboardLine, getAppointmentSource };
 export default Dashboard;

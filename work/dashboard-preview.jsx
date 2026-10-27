@@ -71,7 +71,8 @@ function makeReport(date, locationId) {
       const i = techIndex * 3 + index;
       const time = `${String(9 + index * 2 + (techIndex === 3 ? 1 : 0)).padStart(2, '0')}:${techIndex % 2 ? '30' : '00'}`;
       return {
-        id: `fixture-${location.id}-${i}`,
+        id: i % 4 === 1 ? `bloom:fixture-${location.id}-${i}` : `fixture-${location.id}-${i}`,
+        source: i % 4 === 1 ? 'bloom' : 'square',
         appointmentTime: new Date(`${date}T${time}:00-07:00`).toISOString(),
         customerName: names[i],
         customerPhone: `714555${String(1000 + i).slice(-4)}`,
