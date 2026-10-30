@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Private operator SSH access. No connection is made by --check."""
-import json, os, shlex, shutil, stat, subprocess, sys
+import json, os, shlex, stat, subprocess, sys
 from pathlib import Path
 
 def control_path():
@@ -45,20 +45,23 @@ def main():
             if key in values:
                 raise ValueError('Duplicate private configuration key.')
             values[key] = json.loads(raw)
-    if set(values) != {'VPS_HOST', 'VPS_USER', 'VPS_PASS'} or values['VPS_HOST'] != '24.199.121.72' or values['VPS_USER'] != 'root' or not isinstance(values['VPS_PASS'], str) or not values['VPS_PASS']:
+    # VPS_PASS may stay for the DigitalOcean console; SSH no longer accepts it.
+    if not {'VPS_HOST', 'VPS_USER'} <= set(values) <= {'VPS_HOST', 'VPS_USER', 'VPS_PASS'} or values['VPS_HOST'] != '24.199.121.72' or values['VPS_USER'] != 'root':
         raise ValueError('Unexpected private access configuration.')
     if sys.argv[1:] == ['--check']:
         print(json.dumps({'privateFileValid': True, 'ignored': True, 'tracked': False, 'networkUsed': False}))
         return 0
     if len(sys.argv) < 3 or sys.argv[1] != '--':
         raise ValueError('Use --check for offline validation, or -- followed by an authorized remote command.')
-    if not shutil.which('sshpass'):
-        raise ValueError('Existing sshpass executable is required.')
     socket = control_path()
+    # Root SSH accepts keys only since 2026-10-29 (password login disabled).
+    key = socket.parent / 'id_ed25519'
+    k = key.lstat()
+    if not stat.S_ISREG(k.st_mode) or k.st_uid != os.getuid() or stat.S_IMODE(k.st_mode) != 0o600 or k.st_nlink != 1:
+        raise ValueError('Private owned SSH key ~/.ssh/checkin-vps-control/id_ed25519 with mode 0600 required.')
     env = os.environ.copy()
     env.pop('VPS_PASS', None)
-    env['SSHPASS'] = values['VPS_PASS']
-    command = ['sshpass', '-e', 'ssh', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', '-o', 'NumberOfPasswordPrompts=1', '-o', 'PreferredAuthentications=password', '-o', 'PubkeyAuthentication=no', '-o', 'ControlMaster=auto', '-o', 'ControlPersist=60', '-o', 'ControlPath='+str(socket), 'root@24.199.121.72', shlex.join(sys.argv[2:])]
+    command = ['ssh', '-i', str(key), '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', '-o', 'PreferredAuthentications=publickey', '-o', 'PasswordAuthentication=no', '-o', 'ControlMaster=auto', '-o', 'ControlPersist=60', '-o', 'ControlPath='+str(socket), 'root@24.199.121.72', shlex.join(sys.argv[2:])]
     return subprocess.run(command, env=env).returncode
 
 if __name__ == '__main__':

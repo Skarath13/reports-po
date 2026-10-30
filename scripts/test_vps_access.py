@@ -70,7 +70,7 @@ class ControlPathTests(unittest.TestCase):
 
 
 class CommandTests(unittest.TestCase):
-    def invoke(self, argv):
+    def invoke(self, argv, key=False):
         with tempfile.TemporaryDirectory(dir='/private/tmp') as temp:
             root = Path(temp).resolve()
             home = root/'home'
@@ -80,12 +80,17 @@ class CommandTests(unittest.TestCase):
             values = {'VPS_HOST':'24.199.121.72','VPS_USER':'root','VPS_PASS':'synthetic-password-only'}
             credential.write_text(''.join(k+'='+json.dumps(v)+'\n' for k,v in values.items()))
             credential.chmod(0o600)
+            if key:
+                control = home/'.ssh/checkin-vps-control'
+                control.mkdir(mode=0o700)
+                (control/'id_ed25519').write_text('synthetic-key')
+                (control/'id_ed25519').chmod(0o600)
             calls = []
             def run(command, **kwargs):
                 calls.append((command, kwargs))
                 status = 1 if command[0]=='git' and 'ls-files' in command else 0
                 return subprocess.CompletedProcess(command, status)
-            with patch.object(access, '__file__', str(root/'scripts/vps-access.py')), patch.object(access.sys, 'argv', ['vps-access.py', *argv]), patch.object(access.Path, 'home', return_value=home), patch.object(access.subprocess, 'run', side_effect=run), patch.object(access.shutil, 'which', return_value='/synthetic/sshpass'), patch.dict(access.os.environ, {'VPS_PASS':'ambient-must-not-leak'}), contextlib.redirect_stdout(io.StringIO()) as output:
+            with patch.object(access, '__file__', str(root/'scripts/vps-access.py')), patch.object(access.sys, 'argv', ['vps-access.py', *argv]), patch.object(access.Path, 'home', return_value=home), patch.object(access.subprocess, 'run', side_effect=run), patch.dict(access.os.environ, {'VPS_PASS':'ambient-must-not-leak'}), contextlib.redirect_stdout(io.StringIO()) as output:
                 result = access.main()
             return result, calls, output.getvalue(), (home/'.ssh/checkin-vps-control').exists()
 
@@ -99,25 +104,32 @@ class CommandTests(unittest.TestCase):
 
     def test_one_ssh_process_reuses_private_control_and_preserves_security_and_quoting(self):
         remote = ['printf', '%s', '$(must-not-run)', "literal ' quote"]
-        result, calls, _, created = self.invoke(['--', *remote])
+        result, calls, _, created = self.invoke(['--', *remote], key=True)
         self.assertEqual(result, 0)
         self.assertTrue(created)
         self.assertEqual(len(calls), 3)  # Two existing git guards and one SSH command.
         command, kwargs = calls[-1]
-        self.assertEqual(command[:3], ['sshpass', '-e', 'ssh'])
+        self.assertEqual(command[:2], ['ssh', '-i'])
+        self.assertTrue(command[2].endswith('/.ssh/checkin-vps-control/id_ed25519'))
         self.assertEqual(command[-2], 'root@24.199.121.72')
         self.assertEqual(shlex.split(command[-1]), remote)
         options = [command[i+1] for i,v in enumerate(command[:-1]) if v=='-o']
         self.assertIn('StrictHostKeyChecking=yes', options)
-        self.assertIn('PreferredAuthentications=password', options)
-        self.assertIn('PubkeyAuthentication=no', options)
+        self.assertIn('PreferredAuthentications=publickey', options)
+        self.assertIn('PasswordAuthentication=no', options)
+        self.assertIn('IdentitiesOnly=yes', options)
+        self.assertIn('BatchMode=yes', options)
         self.assertIn('ControlMaster=auto', options)
         self.assertIn('ControlPersist=60', options)
         self.assertEqual(sum(v.startswith('ControlPath=') for v in options), 1)
         self.assertFalse(any(v in command for v in ['-O', '-M', '-N', '-f']))
         self.assertNotIn('synthetic-password-only', str(command))
         self.assertNotIn('VPS_PASS', kwargs['env'])
-        self.assertEqual(kwargs['env']['SSHPASS'], 'synthetic-password-only')
+        self.assertNotIn('SSHPASS', kwargs['env'])
+
+    def test_missing_key_is_refused_before_any_ssh(self):
+        with self.assertRaises((ValueError, OSError, getattr(access, 'AccessError', ValueError))):
+            self.invoke(['--', 'true'])
 
 
 if __name__ == '__main__':
