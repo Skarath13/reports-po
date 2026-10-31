@@ -362,6 +362,16 @@ function getBloomUnavailableNotice(report, allLocationData, selectedDate) {
     };
   }
   if (
+    report?.sources?.bloomHistory?.status === 'unavailable' ||
+    report?.sources?.bloomLookahead?.status === 'unavailable'
+  ) {
+    return {
+      scope: 'history',
+      message:
+        'Bloom visit history could not be loaded. Days since last visit and booking-fix suggestions may be incomplete.',
+    };
+  }
+  if (
     allLocationData?.date === selectedDate &&
     allLocationData?.sources?.bloom?.status === 'unavailable'
   ) {

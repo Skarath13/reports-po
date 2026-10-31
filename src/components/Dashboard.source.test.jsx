@@ -66,6 +66,9 @@ describe('Bloom availability notice', () => {
     [{ sources: down }, { date, sources: down }, 'report'],
     [{ sources: ok }, { date, sources: down }, 'duplicates'],
     [{ sources: ok }, { date: '2026-10-27', sources: down }, null],
+    [{ sources: { ...ok, bloomHistory: { status: 'unavailable' } } }, null, 'history'],
+    [{ sources: { ...ok, bloomLookahead: { status: 'unavailable' } } }, { date, sources: ok }, 'history'],
+    [{ sources: { ...down, bloomHistory: { status: 'unavailable' } } }, null, 'report'],
   ])('report %j with all-locations %j gives %s', (report, allLocations, expected) => {
     const notice = getBloomUnavailableNotice(report, allLocations, date);
     expect(notice?.scope ?? null).toBe(expected);
